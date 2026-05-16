@@ -584,8 +584,8 @@ function VoiceForge({ userId }: { userId: string }) {
             className="flex-1 bg-white/5 border border-white/10 rounded-xl p-3 text-xs font-medium focus:outline-none"
             onChange={(e) => setVoice(voices.find(v => v.name === e.target.value) || null)}
           >
-            {voices.map(v => (
-              <option key={v.name} value={v.name}>{v.name}</option>
+            {voices.map((v, i) => (
+              <option key={`${v.name}-${v.lang}-${i}`} value={v.name}>{v.name}</option>
             ))}
           </select>
           <button 
