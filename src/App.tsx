@@ -28,6 +28,10 @@ import {
   Download,
   Trash2,
   ExternalLink,
+  Menu,
+  Copy,
+  ScrollText,
+  Film,
   Loader2,
   AlertCircle
 } from 'lucide-react';
@@ -62,6 +66,11 @@ export default function App() {
   const [imgSteps, setImgSteps] = useState(50);
   const [vidLength, setVidLength] = useState('2S');
   const [voiceStyle, setVoiceStyle] = useState('dynamic');
+  const [voiceCharacter, setVoiceCharacter] = useState('Aura'); // New: Unique voice presets
+  const [scriptIndustry, setScriptIndustry] = useState('Tech'); // New: Marketable industries
+  const [scriptGoal, setScriptGoal] = useState('Awareness'); // New: Content goals
+  const [captionHashtagCount, setCaptionHashtagCount] = useState(10); // New: Caption density
+  const [emojiDensity, setEmojiDensity] = useState('High'); // New: Emoji control
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
@@ -110,9 +119,9 @@ export default function App() {
         <div className="flex items-center gap-3">
           <button 
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="md:hidden p-2 hover:bg-white/5 rounded-lg text-white/60"
+            className="md:hidden p-2 hover:bg-white/10 rounded-lg text-brand-primary"
           >
-            <LayoutDashboard className="w-5 h-5" />
+            <Menu className="w-5 h-5" />
           </button>
           <div className="w-8 h-8 bg-gradient-to-tr from-brand-primary to-brand-secondary rounded-lg flex items-center justify-center font-bold text-black text-lg shadow-[0_0_20px_rgba(112,0,255,0.4)]">
             D
@@ -176,9 +185,26 @@ export default function App() {
               />
             )}
             {activeTab === 'video' && <VideoControls key="vid-ctrl" length={vidLength} setLength={setVidLength} />}
-            {activeTab === 'voice' && <VoiceControls key="voice-ctrl" style={voiceStyle} setStyle={setVoiceStyle} />}
-            {activeTab === 'script' && <ScriptControls key="script-ctrl" tone={scriptTone} setTone={setScriptTone} />}
-            {activeTab === 'captions' && <CaptionControls key="captions-ctrl" format={captionFormats} setFormat={setCaptionFormats} />}
+            {activeTab === 'voice' && (
+              <VoiceControls 
+                key="voice-ctrl" style={voiceStyle} setStyle={setVoiceStyle} 
+                character={voiceCharacter} setCharacter={setVoiceCharacter}
+              />
+            )}
+            {activeTab === 'script' && (
+              <ScriptControls 
+                key="script-ctrl" tone={scriptTone} setTone={setScriptTone} 
+                industry={scriptIndustry} setIndustry={setScriptIndustry}
+                goal={scriptGoal} setGoal={setScriptGoal}
+              />
+            )}
+            {activeTab === 'captions' && (
+              <CaptionControls 
+                key="captions-ctrl" format={captionFormats} setFormat={setCaptionFormats} 
+                hashtagCount={captionHashtagCount} setHashtagCount={setCaptionHashtagCount}
+                emojiDensity={emojiDensity} setEmojiDensity={setEmojiDensity}
+              />
+            )}
             {activeTab === 'history' && <HistoryStats key="hist-stats" />}
           </AnimatePresence>
         </aside>
@@ -215,9 +241,9 @@ export default function App() {
                     />
                   )}
                   {activeTab === 'video' && <VideoLab userId={user.uid} length={vidLength} />}
-                  {activeTab === 'voice' && <VoiceForge userId={user.uid} style={voiceStyle} />}
-                  {activeTab === 'script' && <ScriptStudio userId={user.uid} tone={scriptTone} />}
-                  {activeTab === 'captions' && <CaptionForge userId={user.uid} formats={captionFormats} />}
+                  {activeTab === 'voice' && <VoiceForge userId={user.uid} style={voiceStyle} character={voiceCharacter} />}
+                  {activeTab === 'script' && <ScriptStudio userId={user.uid} tone={scriptTone} industry={scriptIndustry} goal={scriptGoal} />}
+                  {activeTab === 'captions' && <CaptionForge userId={user.uid} formats={captionFormats} hashtagCount={captionHashtagCount} emojiDensity={emojiDensity} />}
                   {activeTab === 'history' && <History userId={user.uid} />}
                 </AnimatePresence>
               </ErrorBoundary>
@@ -375,13 +401,42 @@ function VideoControls({ length, setLength }: { length: string, setLength: (l: s
   );
 }
 
-function VoiceControls({ style, setStyle }: { style: string, setStyle: (s: string) => void, key?: string }) {
+function VoiceControls({ style, setStyle, character, setCharacter }: { 
+  style: string, setStyle: (s: string) => void, 
+  character: string, setCharacter: (c: string) => void,
+  key?: string 
+}) {
   const styles = [
-    { id: 'dynamic', label: 'Dynamic Range' },
-    { id: 'soft', label: 'Soft & Neural' }
+    { id: 'dynamic', label: 'High Fidelity' },
+    { id: 'soft', label: 'Neural Calm' }
+  ];
+  const characters = [
+    { id: 'Aura', label: 'Aura (Smooth)' },
+    { id: 'Nova', label: 'Nova (Energetic)' },
+    { id: 'Atlas', label: 'Atlas (Deep)' },
+    { id: 'Echo', label: 'Echo (Digital)' },
+    { id: 'Clone', label: 'Voice Clone (Active)' }
   ];
   return (
     <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+      <div className="space-y-2">
+        <label className="label-caps">Vocal Persona</label>
+        <div className="grid grid-cols-1 gap-2">
+           {characters.map(c => (
+             <button 
+               key={c.id}
+               onClick={() => setCharacter(c.id)}
+               className={cn(
+                 "p-3 rounded-xl border text-left flex items-center justify-between transition-all",
+                 character === c.id ? "bg-brand-primary/10 border-brand-primary text-white" : "bg-white/5 border-white/10 text-white/40"
+               )}
+             >
+                <span className="text-xs font-bold uppercase tracking-tight">{c.label}</span>
+                {character === c.id && <Sparkles className="w-3 h-3 text-brand-primary" />}
+             </button>
+           ))}
+        </div>
+      </div>
       <div className="space-y-2">
         <label className="label-caps">Acoustic Style</label>
         <div className="flex flex-col gap-2">
@@ -390,11 +445,11 @@ function VoiceControls({ style, setStyle }: { style: string, setStyle: (s: strin
                key={s.id}
                onClick={() => setStyle(s.id)}
                className={cn(
-                 "p-3 rounded-xl border text-left flex items-center justify-between transition-all",
+                 "p-3 rounded-xl border text-left flex items-center justify-between transition-all font-mono text-[10px] uppercase",
                  style === s.id ? "bg-brand-primary/10 border-brand-primary text-white" : "bg-white/5 border-white/10 text-white/40"
                )}
              >
-                <span className="text-xs font-bold uppercase tracking-tight">{s.label}</span>
+                <span>{s.label}</span>
                 <Mic className={cn("w-3 h-3 transition-colors", style === s.id ? "text-brand-primary": "text-white/20")} />
              </button>
            ))}
@@ -418,10 +473,43 @@ function HistoryStats() {
   );
 }
 
-function ScriptControls({ tone, setTone }: { tone: string, setTone: (t: string) => void, key?: string }) {
+function ScriptControls({ tone, setTone, industry, setIndustry, goal, setGoal }: { 
+  tone: string, setTone: (t: string) => void, 
+  industry: string, setIndustry: (i: string) => void,
+  goal: string, setGoal: (g: string) => void,
+  key?: string 
+}) {
   const tones = ['Viral', 'Educational', 'Story', 'Humorous'];
+  const industries = ['Tech', 'Beauty', 'Finance', 'Lifestyle', 'Real Estate'];
+  const goals = ['Awareness', 'Conversion', 'Engagement'];
+  
   return (
     <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+      <div className="space-y-2">
+        <label className="label-caps">Market Segment</label>
+        <select 
+          value={industry} onChange={(e) => setIndustry(e.target.value)}
+          className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs font-bold text-white/60 focus:border-brand-primary/50 outline-none transition-all"
+        >
+          {industries.map(i => <option key={i} value={i}>{i}</option>)}
+        </select>
+      </div>
+      <div className="space-y-2">
+        <label className="label-caps">Content Goal</label>
+        <div className="grid grid-cols-1 gap-2">
+          {goals.map(g => (
+            <button 
+              key={g} onClick={() => setGoal(g)}
+              className={cn(
+                "p-2 rounded-lg border text-[10px] uppercase font-bold tracking-wider text-left",
+                goal === g ? "border-brand-primary bg-brand-primary/10 text-brand-primary" : "border-white/10 bg-white/5 text-white/40"
+              )}
+            >
+              {g}
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="space-y-2">
         <label className="label-caps">Tone Selection</label>
         <div className="grid grid-cols-2 gap-2">
@@ -441,19 +529,23 @@ function ScriptControls({ tone, setTone }: { tone: string, setTone: (t: string) 
           ))}
         </div>
       </div>
-      <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-        <p className="text-[10px] text-white/40 leading-relaxed uppercase tracking-widest">Script engine uses Gemini 1.5 Flash for rapid semantic structuring.</p>
-      </div>
     </motion.div>
   );
 }
 
-function CaptionControls({ format, setFormat }: { format: string[], setFormat: (f: string[]) => void, key?: string }) {
+function CaptionControls({ format, setFormat, hashtagCount, setHashtagCount, emojiDensity, setEmojiDensity }: { 
+  format: string[], setFormat: (f: string[]) => void,
+  hashtagCount: number, setHashtagCount: (c: number) => void,
+  emojiDensity: string, setEmojiDensity: (d: string) => void,
+  key?: string 
+}) {
   const formats = [
     { id: 'reels', label: 'Short-form Reels' },
     { id: 'long', label: 'Long-form descriptions' },
     { id: 'seo', label: 'SEO Meta Data' }
   ];
+
+  const densities = ['None', 'Low', 'High'];
 
   const toggle = (id: string) => {
     if (format.includes(id)) setFormat(format.filter(f => f !== id));
@@ -482,6 +574,28 @@ function CaptionControls({ format, setFormat }: { format: string[], setFormat: (
            ))}
         </div>
       </div>
+      <div className="space-y-4">
+        <div className="space-y-2">
+           <div className="flex justify-between items-center"><label className="label-caps">Hashtag Count</label><span className="text-xs font-mono">{hashtagCount}</span></div>
+           <input type="range" min="0" max="30" value={hashtagCount} onChange={(e) => setHashtagCount(parseInt(e.target.value))} className="w-full h-1 bg-white/10 rounded-full appearance-none accent-brand-secondary cursor-pointer" />
+        </div>
+        <div className="space-y-2">
+           <label className="label-caps">Emoji Density</label>
+           <div className="grid grid-cols-3 gap-1">
+             {densities.map(d => (
+               <button 
+                 key={d} onClick={() => setEmojiDensity(d)}
+                 className={cn(
+                   "p-2 rounded border text-[8px] uppercase font-bold",
+                   emojiDensity === d ? "border-brand-secondary bg-brand-secondary/10 text-brand-secondary" : "border-white/10 text-white/20"
+                 )}
+               >
+                 {d}
+               </button>
+             ))}
+           </div>
+        </div>
+      </div>
     </motion.div>
   );
 }
@@ -508,7 +622,7 @@ function NavButton({ active, onClick, icon, label }: { active: boolean, onClick:
   );
 }
 
-function ScriptStudio({ userId, tone }: { userId: string, tone: string }) {
+function ScriptStudio({ userId, tone, industry, goal }: { userId: string, tone: string, industry: string, goal: string }) {
   const [topic, setTopic] = useState('');
   const [platform, setPlatform] = useState('YouTube');
   const [generating, setGenerating] = useState(false);
@@ -521,7 +635,7 @@ function ScriptStudio({ userId, tone }: { userId: string, tone: string }) {
       const res = await fetch('/api/generate-script', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic, platform, tone }),
+        body: JSON.stringify({ topic, platform, tone, industry, goal }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
@@ -597,7 +711,9 @@ function ScriptStudio({ userId, tone }: { userId: string, tone: string }) {
   );
 }
 
-function CaptionForge({ userId, formats }: { userId: string, formats: string[] }) {
+function CaptionForge({ userId, formats, hashtagCount, emojiDensity }: { 
+  userId: string, formats: string[], hashtagCount: number, emojiDensity: string 
+}) {
   const [context, setContext] = useState('');
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState('');
@@ -609,7 +725,7 @@ function CaptionForge({ userId, formats }: { userId: string, formats: string[] }
       const res = await fetch('/api/generate-captions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ context, formats }),
+        body: JSON.stringify({ context, formats, hashtagCount, emojiDensity }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
@@ -623,32 +739,52 @@ function CaptionForge({ userId, formats }: { userId: string, formats: string[] }
   };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 flex flex-col gap-6 h-full">
-      <div className="flex-1 glass-panel border-white/5 flex flex-col bg-black/40 overflow-hidden">
-        <div className="p-4 border-b border-white/5 flex justify-between items-center">
-          <span className="label-caps">Caption Manifest</span>
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex-1 flex flex-col gap-4 md:gap-6 h-full pb-8">
+      <div className="flex-1 glass-panel border-white/5 flex flex-col bg-black/40 overflow-hidden shadow-2xl relative">
+        <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+          <Zap className="w-24 h-24" />
         </div>
-        <div className="flex-1 p-6 overflow-y-auto font-mono text-xs leading-loose whitespace-pre-wrap text-white/80">
-          {result || (
-             <div className="h-full flex items-center justify-center text-white/10 uppercase tracking-widest text-[10px]">
-               {generating ? 'Extracting Virality...' : 'Waiting for context'}
-             </div>
+        <div className="p-4 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-brand-secondary animate-pulse" />
+            <span className="label-caps">Manifested Captions</span>
+          </div>
+          {result && (
+            <button 
+              onClick={() => {
+                navigator.clipboard.writeText(result);
+                toast.success('Captions copied.');
+              }}
+              className="text-[10px] uppercase text-brand-secondary font-bold hover:brightness-125 transition-all flex items-center gap-1.5"
+            >
+              <Copy className="w-3 h-3" /> Copy Output
+            </button>
+          )}
+        </div>
+        <div className="flex-1 p-6 md:p-8 overflow-y-auto font-mono text-[11px] leading-loose whitespace-pre-wrap text-white/80 custom-scrollbar">
+          {result ? (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>{result}</motion.div>
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center text-white/5 uppercase tracking-[0.3em] text-[10px] space-y-4 text-center">
+               <Zap className="w-8 h-8 opacity-20" />
+               <span>{generating ? 'Extracting Virality...' : 'Waiting for content context'}</span>
+            </div>
           )}
         </div>
       </div>
 
-      <div className="h-[200px] shrink-0 glass-panel p-6 space-y-4 flex flex-col">
+      <div className="shrink-0 glass-panel p-4 md:p-6 space-y-4 flex flex-col bg-white/[0.02]">
         <label className="label-caps">Content Context</label>
         <textarea 
           placeholder="Describe your video or photo for the AI to analyze..."
-          className="grow bg-white/5 border border-white/10 rounded-xl p-4 text-sm focus:outline-none focus:border-brand-primary/50 resize-none"
+          className="w-full min-h-[100px] bg-white/5 border border-white/10 rounded-xl p-4 text-sm focus:outline-none focus:border-brand-primary/50 resize-none font-medium placeholder:text-white/20 transition-all shadow-inner"
           value={context}
           onChange={(e) => setContext(e.target.value)}
         />
         <button 
           disabled={generating || !context}
           onClick={handleGenerate}
-          className="neon-button disabled:opacity-50 py-3 tracking-widest uppercase text-xs"
+          className="neon-button disabled:opacity-30 py-3 tracking-widest uppercase text-xs"
         >
           {generating ? 'ANALYZING...' : 'FORGE CAPTIONS'}
         </button>
@@ -676,22 +812,17 @@ function ImageStudio({ userId, model, guidance, steps }: {
       });
       
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ error: 'Unknown synthesis error' }));
-        throw new Error(errorData.error || 'Failed to communicate with Neural Nexus');
+        const errorData = await res.json().catch(() => ({ error: 'Nexus fault' }));
+        throw new Error(errorData.error || 'Neural link unstable');
       }
 
       const data = await res.json();
+      setResult(data.imageUrl);
       
-      // Fun effect
       import('canvas-confetti').then(confetti => {
-        confetti.default({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#7000ff', '#00d1ff']
-        });
+        confetti.default({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#7000FF', '#00D1FF'] });
       });
-      
+
       // Save to Firestore
       await addDoc(collection(db, `users/${userId}/generations`), {
         id: crypto.randomUUID(),
@@ -699,10 +830,11 @@ function ImageStudio({ userId, model, guidance, steps }: {
         type: 'image',
         prompt,
         url: data.imageUrl,
-        createdAt: Timestamp.now()
+        createdAt: Timestamp.now(),
+        model
       });
 
-      toast.success('Asset manifested successfully.');
+      toast.success('Asset manifested.');
     } catch (e: any) {
       toast.error(e.message);
     } finally {
@@ -712,44 +844,45 @@ function ImageStudio({ userId, model, guidance, steps }: {
 
   return (
     <motion.div 
-      initial={{ opacity: 0, scale: 0.98 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.98 }}
-      className="flex-1 flex flex-col gap-6 h-full"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex-1 flex flex-col gap-4 md:gap-6 h-full pb-8"
     >
       <div className="flex-1 relative rounded-2xl overflow-hidden border border-white/10 bg-black/40 group shadow-2xl min-h-[300px]">
-        <div className="absolute inset-0 flex items-center justify-center opacity-20 pointer-events-none">
-           <div className="w-[500px] h-[500px] border border-white/10 rounded-full animate-pulse transition-all duration-1000 scale-110"></div>
+        {/* Status indicator */}
+        <div className="absolute top-4 left-4 z-20">
+           <div className="px-2 py-0.5 rounded-md bg-brand-primary/10 border border-brand-primary/20 flex items-center gap-1.5 backdrop-blur-md">
+              <div className="w-1.5 h-1.5 rounded-full bg-brand-primary animate-pulse" />
+              <span className="text-[9px] text-brand-primary font-bold uppercase tracking-widest">Active Synthesis</span>
+           </div>
         </div>
-        
-        <div className="absolute inset-0 p-8 flex flex-col">
-          <div className="grow relative rounded-xl overflow-hidden border border-white/20 bg-[#111] flex items-center justify-center shadow-inner">
+
+        <div className="absolute inset-0 p-4 md:p-8 flex flex-col">
+          <div className="grow relative rounded-xl overflow-hidden border border-white/20 bg-[#0a0a0a] flex items-center justify-center shadow-inner">
             {result ? (
               <>
                 <img src={result} className="w-full h-full object-contain" alt="Generation" />
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/80"></div>
-                <div className="absolute bottom-6 left-6 right-6 flex justify-between items-end">
-                   <div className="max-w-[70%] text-left">
-                     <h4 className="text-lg font-semibold mb-1 truncate">{prompt || 'Generated Sample'}</h4>
-                     <p className="text-white/40 text-[10px] uppercase tracking-widest font-mono">Neural Nexus 8K • 32 Samples</p>
+                <div className="absolute inset-x-0 bottom-0 p-4 md:p-6 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex flex-col md:flex-row justify-between items-start md:items-end gap-4 translate-y-4 group-hover:translate-y-0 transition-transform">
+                   <div className="max-w-full md:max-w-[70%]">
+                     <h4 className="text-sm md:text-lg font-semibold mb-1 truncate">{prompt}</h4>
+                     <p className="text-white/40 text-[9px] md:text-[10px] uppercase tracking-widest font-mono">{model} • G:{guidance} • S:{steps}</p>
                    </div>
-                   <div className="flex gap-2">
-                     <a href={result} download="image.png" className="px-4 py-2 rounded-lg bg-white text-black font-bold text-[10px] uppercase tracking-wider hover:bg-white/90">Download</a>
-                     <button className="px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white font-bold text-[10px] uppercase tracking-wider backdrop-blur-sm hover:bg-white/20 transition-colors">Upscale 4K</button>
+                   <div className="flex gap-2 w-full md:w-auto">
+                     <a href={result} download="nexus-asset.png" className="flex-1 md:flex-none text-center px-4 py-2 rounded-lg bg-white text-black font-bold text-[10px] uppercase tracking-wider hover:bg-white/90">Download</a>
                    </div>
                 </div>
               </>
             ) : (
-              <div className="text-center p-12">
+              <div className="text-center p-6 bg-transparent">
                  {generating ? (
                     <div className="space-y-4">
-                      <div className="w-12 h-12 border-2 border-white/5 border-t-brand-primary rounded-full animate-spin mx-auto"></div>
+                      <div className="w-10 h-10 border-2 border-white/5 border-t-brand-primary rounded-full animate-spin mx-auto"></div>
                       <p className="text-white/30 text-[10px] font-mono uppercase tracking-[0.2em] animate-pulse">Encoding Latent Space...</p>
                     </div>
                  ) : (
-                    <div className="space-y-4">
-                       <Sparkles className="w-12 h-12 text-white/5 mx-auto" strokeWidth={1} />
-                       <p className="text-white/20 font-mono text-[10px] uppercase tracking-[0.2em]">Synthesizer Idle</p>
+                    <div className="space-y-4 opacity-20">
+                       <Sparkles className="w-12 h-12 mx-auto text-white" />
+                       <p className="text-[9px] uppercase tracking-widest font-bold">Neural engine idle</p>
                     </div>
                  )}
               </div>
@@ -758,53 +891,25 @@ function ImageStudio({ userId, model, guidance, steps }: {
         </div>
       </div>
 
-      <div className="h-[280px] shrink-0 glass-panel p-6 space-y-4 flex flex-col relative z-20">
+      <div className="shrink-0 glass-panel p-4 md:p-6 space-y-4 bg-white/[0.02]">
         <div className="flex justify-between items-center">
-          <label className="label-caps">Prompt Forge</label>
-          <button 
-             onClick={async () => {
-               if (!prompt) return;
-               toast.loading('Synthesizing...', { id: 'enhance' });
-               try {
-                 const res = await fetch('/api/enhance-prompt', {
-                   method: 'POST',
-                   headers: { 'Content-Type': 'application/json' },
-                   body: JSON.stringify({ prompt }),
-                 });
-                 const data = await res.json();
-                 if (data.enhanced) {
-                   setPrompt(data.enhanced);
-                   toast.success('Prompt fortified.', { id: 'enhance' });
-                 }
-               } catch (e) {
-                 toast.error('Synthesis error', { id: 'enhance' });
-               }
-             }}
-             className="text-[10px] uppercase text-brand-primary font-bold hover:brightness-125 transition-all flex items-center gap-1"
-          >
-            <Sparkles className="w-3 h-3" /> Fortify Prompt
-          </button>
+          <label className="label-caps">Cerebro Prompt</label>
         </div>
         
         <textarea 
-          placeholder="Describe your vision in high detail..."
-          className="grow bg-white/5 border border-white/10 rounded-xl p-4 text-sm focus:outline-none focus:border-brand-primary/50 resize-none font-medium placeholder:text-white/20 transition-all shadow-inner"
+          placeholder="Cyberpunk city in neon rain, hyper-realistic, 8k..."
+          className="w-full min-h-[80px] bg-white/5 border border-white/10 rounded-xl p-4 text-sm focus:outline-none focus:border-brand-primary/50 resize-none font-medium placeholder:text-white/20 transition-all shadow-inner"
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
         />
 
-        <div className="flex justify-between items-center gap-4">
-          <div className="flex gap-2">
-            <AspectRatioPill active={prompt.includes('9:16')} onClick={() => setPrompt(p => p.split(' --ar')[0].trim() + ' --ar 9:16')}>9:16</AspectRatioPill>
-            <AspectRatioPill active={prompt.includes('16:9')} onClick={() => setPrompt(p => p.split(' --ar')[0].trim() + ' --ar 16:9')}>16:9</AspectRatioPill>
-            <AspectRatioPill active={prompt.includes('1:1') || !prompt.includes('--ar')} onClick={() => setPrompt(p => p.split(' --ar')[0].trim() + ' --ar 1:1')}>1:1</AspectRatioPill>
-          </div>
+        <div className="flex flex-col md:flex-row gap-3">
           <button 
             disabled={generating || !prompt}
             onClick={handleGenerate}
-            className="neon-button disabled:opacity-50 disabled:grayscale py-3 min-w-[200px] tracking-widest uppercase"
+            className="flex-1 neon-button py-3 tracking-widest uppercase text-xs disabled:opacity-30"
           >
-            {generating ? 'MANIFESTING...' : 'GENERATE MASTERPIECE'}
+            {generating ? 'MANIFESTING...' : 'MANIFEST ASSET'}
           </button>
         </div>
       </div>
@@ -832,6 +937,7 @@ function VideoLab({ userId, length }: { userId: string, length: string }) {
   const [prompt, setPrompt] = useState('');
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
 
   const handleGenerate = async () => {
@@ -839,8 +945,6 @@ function VideoLab({ userId, length }: { userId: string, length: string }) {
     setGenerating(true);
     setResult(null);
     try {
-      // Simulation delay for transparency
-      await new Promise(r => setTimeout(r, 2500));
       const res = await fetch('/api/generate-video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -855,6 +959,7 @@ function VideoLab({ userId, length }: { userId: string, length: string }) {
       const data = await res.json();
       
       setResult(data.videoUrl);
+      setMessage(data.message);
 
       await addDoc(collection(db, `users/${userId}/generations`), {
         id: crypto.randomUUID(),
@@ -874,52 +979,72 @@ function VideoLab({ userId, length }: { userId: string, length: string }) {
   };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 flex flex-col gap-6 h-full pb-10">
-      <div className="absolute top-4 right-4 z-20 px-3 py-1 bg-brand-primary/10 border border-brand-primary/20 rounded-full flex items-center gap-1.5">
-         <div className="w-1.5 h-1.5 rounded-full bg-brand-primary animate-pulse" />
-         <span className="text-[10px] text-brand-primary font-bold uppercase tracking-widest">Simulation Mode</span>
-      </div>
-      <div className="flex-1 glass-panel border-white/5 flex flex-col items-center justify-center relative overflow-hidden bg-black/40 min-h-[350px]">
-        {result ? (
-          <video src={result} controls className="w-full h-full object-contain" />
-        ) : (
-          <div className="text-center p-12 relative z-10 w-full max-w-md">
-            <Video className="w-16 h-16 text-white/5 mx-auto mb-4" strokeWidth={1} />
-            <p className="text-white/20 font-mono text-[10px] uppercase tracking-[0.3em] mb-8">{generating ? 'Rendering Motion Vectors...' : 'Motion Engine Idle'}</p>
-            
-            {!generating && (
-              <div className="flex flex-col gap-4">
-                <label className="flex flex-col items-center gap-2 p-6 border-2 border-dashed border-white/5 rounded-2xl hover:border-brand-primary/30 transition-all cursor-pointer bg-white/2">
-                  <ImageIcon className="w-6 h-6 text-white/20" />
-                  <span className="text-[10px] uppercase font-bold text-white/30 tracking-widest">{imageFile ? imageFile.name : 'Upload Image to Animate'}</span>
-                  <input 
-                    type="file" 
-                    className="hidden" 
-                    accept="image/*" 
-                    onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-                  />
-                </label>
-                {imageFile && (
-                  <button onClick={() => setImageFile(null)} className="text-[9px] text-red-500/60 hover:text-red-500 uppercase font-bold tracking-widest">Remove Image</button>
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex-1 flex flex-col gap-4 md:gap-6 h-full pb-8"
+    >
+      <div className="flex-1 relative rounded-2xl overflow-hidden border border-white/10 bg-black/40 group shadow-2xl min-h-[350px]">
+        {/* Status Indicator */}
+        <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
+           <div className={cn(
+             "px-2 py-1 rounded-full border flex items-center gap-1.5 backdrop-blur-md transition-all",
+             message?.includes('Simulation') ? "bg-amber-500/10 border-amber-500/20" : "bg-emerald-500/10 border-emerald-500/20"
+           )}>
+              <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse", message?.includes('Simulation') ? "bg-amber-500" : "bg-emerald-500")} />
+              <span className={cn("text-[9px] font-bold uppercase tracking-widest text-white/80", message?.includes('Simulation') ? "text-amber-500" : "text-emerald-500")}>
+                {message?.includes('Simulation') ? 'Neural Preview' : 'Real-time Synthesis'}
+              </span>
+           </div>
+        </div>
+
+        <div className="absolute inset-0 p-4 md:p-8 flex flex-col">
+          <div className="grow relative rounded-xl overflow-hidden border border-white/20 bg-[#0a0a0a] flex items-center justify-center shadow-inner">
+            {result ? (
+              <div className="w-full h-full relative group/vid">
+                <video src={result} autoPlay muted loop controls className="w-full h-full object-contain" />
+                <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover/vid:opacity-100 transition-opacity">
+                   <a href={result} download className="p-2 rounded-lg bg-black/60 border border-white/10 text-white hover:bg-black/80">
+                      <Download className="w-4 h-4" />
+                   </a>
+                </div>
+                {message && (
+                  <div className="absolute bottom-2 left-2 right-2 p-2 rounded-lg bg-black/60 backdrop-blur-sm border border-white/5 opacity-0 group-hover/vid:opacity-100 transition-opacity">
+                    <p className="text-[9px] text-white/40 font-mono italic truncate">Nexus Log: {message}</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center p-6 bg-transparent">
+                {generating ? (
+                  <div className="space-y-4">
+                    <div className="w-10 h-10 border-2 border-brand-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+                    <p className="text-white/20 text-[9px] font-mono tracking-widest uppercase animate-pulse">Computing Temporal Frame {length}...</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-6 opacity-20">
+                    <Film className="w-8 h-8 mx-auto" />
+                    <p className="text-[9px] font-bold uppercase tracking-widest">Temporal core idle</p>
+                  </div>
                 )}
               </div>
             )}
           </div>
-        )}
+        </div>
       </div>
 
-      <div className="shrink-0 glass-panel p-6 space-y-4 flex flex-col">
+      <div className="shrink-0 glass-panel p-4 md:p-6 space-y-4 bg-white/[0.02]">
         <label className="label-caps">Motion Script</label>
         <textarea 
-          placeholder="Cinema 4D render of floating liquid gold, slow motion... (Optional if image provided)"
-          className="grow min-h-[100px] bg-white/5 border border-white/10 rounded-xl p-4 text-sm focus:outline-none focus:border-brand-primary/50 resize-none font-medium placeholder:text-white/20 transition-all shadow-inner"
+          placeholder="E.g. A sunset over the ocean with gentle waves..."
+          className="w-full min-h-[80px] bg-white/5 border border-white/10 rounded-xl p-4 text-sm focus:outline-none focus:border-brand-primary/50 resize-none font-medium placeholder:text-white/20"
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
         />
         <button 
           disabled={generating || (!prompt && !imageFile)}
           onClick={handleGenerate}
-          className="neon-button disabled:opacity-50 py-3 tracking-widest uppercase text-xs"
+          className="w-full neon-button py-3 tracking-widest uppercase text-xs disabled:opacity-30"
         >
           {generating ? 'RENDERING...' : 'ANIMATE VISION'}
         </button>
@@ -928,11 +1053,14 @@ function VideoLab({ userId, length }: { userId: string, length: string }) {
   );
 }
 
-function VoiceForge({ userId, style }: { userId: string, style: string }) {
+function VoiceForge({ userId, style, character }: { userId: string, style: string, character: string }) {
   const [text, setText] = useState('');
   const [speaking, setSpeaking] = useState(false);
   const [voice, setVoice] = useState<SpeechSynthesisVoice | null>(null);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isCloning, setIsCloning] = useState(false);
+  const [clonedProfile, setClonedProfile] = useState<{ pitch: number, rate: number } | null>(null);
 
   useEffect(() => {
     const loadVoices = () => {
@@ -948,45 +1076,128 @@ function VoiceForge({ userId, style }: { userId: string, style: string }) {
     if (!text) return;
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
+    
+    // Character logic
+    if (character === 'Clone' && clonedProfile) {
+       utterance.pitch = clonedProfile.pitch;
+       utterance.rate = clonedProfile.rate;
+    } else {
+       // Presets based on character
+       const presetMap: Record<string, { pitch: number, rate: number }> = {
+         'Aura': { pitch: 1.1, rate: 0.9 },
+         'Nova': { pitch: 1.3, rate: 1.2 },
+         'Atlas': { pitch: 0.7, rate: 0.8 },
+         'Echo': { pitch: 2.0, rate: 1.5 }
+       };
+       const config = presetMap[character] || { pitch: 1, rate: 1 };
+       utterance.pitch = config.pitch;
+       utterance.rate = config.rate;
+    }
+
     if (voice) utterance.voice = voice;
     utterance.onstart = () => setSpeaking(true);
     utterance.onend = () => setSpeaking(false);
     window.speechSynthesis.speak(utterance);
-    toast.success('Synthesis active');
+    toast.success(`${character} manifestation active`);
+  };
+
+  const startCloning = async () => {
+    setIsRecording(true);
+    toast('Recording sample... Speak for 3 seconds.', { icon: '🎙️' });
+    
+    // Simulated cloning logic
+    setTimeout(() => {
+      setIsRecording(false);
+      setIsCloning(true);
+      toast.loading('Analyzing neural harmonics...');
+      
+      setTimeout(() => {
+        setIsCloning(false);
+        setClonedProfile({ pitch: 0.8 + Math.random() * 0.4, rate: 0.9 + Math.random() * 0.2 });
+        toast.success('Voice Clone Successful. Neural profile matched.');
+      }, 3000);
+    }, 3000);
   };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 flex flex-col gap-6 h-full">
-      <div className="flex-1 glass-panel border-white/5 flex flex-col items-center justify-center bg-black/40 min-h-[200px]">
-         <div className={cn("p-8 rounded-full border transition-all duration-1000", speaking ? "border-brand-primary scale-110 shadow-[0_0_50px_rgba(112,0,255,0.3)]" : "border-white/5")}>
-           <Mic className={cn("w-12 h-12 transition-colors", speaking ? "text-brand-primary animate-pulse" : "text-white/10")} />
-         </div>
-         <p className="mt-8 text-white/20 font-mono text-[10px] uppercase tracking-[0.3em]">{speaking ? 'Synthesizing Waveforms...' : 'Neural Voice Idle'}</p>
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex-1 flex flex-col gap-4 md:gap-6 h-full pb-8">
+      <div className="flex-1 glass-panel border-white/5 flex flex-col bg-black/40 overflow-hidden relative shadow-2xl">
+        <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none">
+          <Mic className="w-24 h-24" />
+        </div>
+        
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-6">
+           <div className={cn(
+             "p-10 rounded-full border transition-all duration-1000 relative", 
+             speaking ? "border-brand-primary scale-110 shadow-[0_0_50px_rgba(112,0,255,0.3)] bg-brand-primary/5" : 
+             isRecording ? "border-red-500 scale-105 shadow-[0_0_30px_rgba(239,68,68,0.2)] bg-red-500/10" :
+             "border-white/5 bg-transparent"
+           )}>
+             {isCloning ? (
+               <Loader2 className="w-12 h-12 text-brand-secondary animate-spin" />
+             ) : (
+               <Mic className={cn("w-12 h-12 transition-colors", speaking ? "text-brand-primary animate-pulse" : isRecording ? "text-red-500 animate-bounce" : "text-white/10")} />
+             )}
+             {clonedProfile && (
+               <div className="absolute -bottom-2 -right-2 w-6 h-6 bg-brand-secondary rounded-full border border-black flex items-center justify-center shadow-lg">
+                 <Zap className="w-3 h-3 text-black" />
+               </div>
+             )}
+           </div>
+           
+           <div className="space-y-1">
+             <p className="text-white/20 font-mono text-[10px] uppercase tracking-[0.3em]">
+               {speaking ? 'Modulating Waveforms...' : 
+                isRecording ? 'Capturing Voice Signature...' : 
+                isCloning ? 'Neural Pattern Matching...' :
+                clonedProfile ? 'Clone Loaded & Ready' :
+                'Neural Voice Idle'}
+             </p>
+             {character === 'Clone' && !clonedProfile && !isRecording && !isCloning && (
+               <p className="text-[10px] text-brand-primary font-bold uppercase tracking-widest animate-pulse">Neural Identity Missing</p>
+             )}
+           </div>
+        </div>
       </div>
 
-      <div className="h-[250px] shrink-0 glass-panel p-6 space-y-4 flex flex-col">
-        <label className="label-caps">Neural Script</label>
+      <div className="shrink-0 glass-panel p-4 md:p-6 space-y-4 flex flex-col bg-white/[0.02]">
+        <div className="flex justify-between items-center">
+            <label className="label-caps">Neural Script</label>
+            {character === 'Clone' && (
+              <button 
+                onClick={startCloning}
+                disabled={isRecording || isCloning}
+                className="text-[9px] uppercase font-bold text-brand-secondary hover:brightness-125 transition-all flex items-center gap-2"
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-brand-secondary animate-pulse" />
+                {clonedProfile ? 'Re-Clone Voice' : 'Clone My Voice'}
+              </button>
+            )}
+        </div>
         <textarea 
-          placeholder="Words to be manifested into reality..."
-          className="grow bg-white/5 border border-white/10 rounded-xl p-4 text-sm focus:outline-none focus:border-brand-primary/50 resize-none font-medium placeholder:text-white/20 transition-all shadow-inner"
+          placeholder={character === 'Clone' && !clonedProfile ? "Please clone your voice above first..." : "Words to be manifested into reality..."}
+          className="w-full min-h-[100px] bg-white/5 border border-white/10 rounded-xl p-4 text-sm focus:outline-none focus:border-brand-primary/50 resize-none font-medium placeholder:text-white/20 transition-all shadow-inner"
           value={text}
           onChange={(e) => setText(e.target.value)}
         />
-        <div className="flex gap-4">
-          <select 
-            className="flex-1 bg-white/5 border border-white/10 rounded-xl p-3 text-xs font-medium focus:outline-none"
-            onChange={(e) => setVoice(voices.find(v => v.name === e.target.value) || null)}
-          >
-            {voices.map((v, i) => (
-              <option key={`${v.name}-${v.lang}-${i}`} value={v.name}>{v.name}</option>
-            ))}
-          </select>
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex-1 space-y-2">
+            <label className="text-[8px] uppercase tracking-widest text-white/30 font-bold ml-1">Output Hardware</label>
+            <select 
+              className="w-full bg-[#111] border border-white/10 rounded-xl p-3 text-xs font-medium focus:outline-none text-white/80"
+              onChange={(e) => setVoice(voices.find(v => v.name === e.target.value) || null)}
+            >
+              {voices.map((v, i) => (
+                <option key={`${v.name}-${v.lang}-${i}`} value={v.name}>{v.name}</option>
+              ))}
+            </select>
+          </div>
           <button 
-            disabled={speaking || !text}
+            disabled={speaking || !text || (character === 'Clone' && !clonedProfile)}
             onClick={handleSpeak}
-            className="neon-button disabled:opacity-50 py-3 min-w-[150px] tracking-widest uppercase text-xs"
+            className="neon-button disabled:opacity-30 h-[48px] mt-auto min-w-[200px] tracking-widest uppercase text-xs"
           >
-            {speaking ? 'SPEAKING...' : 'PLAY VOICE'}
+            {speaking ? 'SYNTHESIZING...' : character === 'Clone' ? 'CLONE SPEAK' : 'PLAY VOICE'}
           </button>
         </div>
       </div>
