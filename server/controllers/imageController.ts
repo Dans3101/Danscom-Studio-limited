@@ -15,11 +15,17 @@ export const generateImage = async (req: Request, res: Response) => {
 
     try {
       const response = await fetch(
-        "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5",
+        "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
         {
-          headers: { Authorization: `Bearer ${HF_API_KEY}` },
+          headers: { 
+            Authorization: `Bearer ${HF_API_KEY}`,
+            "Content-Type": "application/json"
+          },
           method: "POST",
-          body: JSON.stringify({ inputs: prompt }),
+          body: JSON.stringify({ 
+            inputs: prompt,
+            options: { wait_for_model: true }
+          }),
         }
       );
 

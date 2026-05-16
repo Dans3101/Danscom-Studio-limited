@@ -35,7 +35,7 @@ import { Toaster, toast } from 'react-hot-toast';
 import { cn } from './lib/utils';
 
 // --- Types ---
-type Tab = 'image' | 'video' | 'voice' | 'history';
+type Tab = 'image' | 'video' | 'voice' | 'script' | 'captions' | 'history';
 
 interface Generation {
   id: string;
@@ -83,7 +83,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-bg-dark text-white selection:bg-brand-primary/30 relative overflow-hidden">
+    <div className="h-screen w-screen bg-bg-dark text-white selection:bg-brand-primary/30 relative overflow-hidden flex flex-col">
       <Toaster position="bottom-right" toastOptions={{
         style: { background: '#1a1a1a', color: '#fff', border: '1px solid #333' }
       }} />
@@ -95,29 +95,31 @@ export default function App() {
       </div>
       
       {/* Navbar */}
-      <nav className="fixed top-0 w-full z-50 px-8 h-18 border-b border-white/10 bg-black/40 backdrop-blur-md flex items-center justify-between">
+      <nav className="h-[72px] shrink-0 px-8 border-b border-white/10 bg-black/40 backdrop-blur-md flex items-center justify-between relative z-50">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-gradient-to-tr from-brand-primary to-brand-secondary rounded-lg flex items-center justify-center font-bold text-black text-lg shadow-[0_0_20px_rgba(112,0,255,0.4)]">
             D
           </div>
-          <span className="text-xl font-semibold tracking-tight hidden sm:block">Danscom AI Studio</span>
+          <span className="text-xl font-semibold tracking-tight hidden lg:block">Danscom AI Studio</span>
         </div>
 
-        <div className="nav-pill">
-          <TabButton active={activeTab === 'image'} onClick={() => setActiveTab('image')}>Image Studio</TabButton>
-          <TabButton active={activeTab === 'video'} onClick={() => setActiveTab('video')}>Video Studio</TabButton>
-          <TabButton active={activeTab === 'voice'} onClick={() => setActiveTab('voice')}>Voice Forge</TabButton>
-          {user && <TabButton active={activeTab === 'history'} onClick={() => setActiveTab('history')}>Archives</TabButton>}
+        <div className="nav-pill scale-90 md:scale-100">
+          <TabButton active={activeTab === 'image'} onClick={() => setActiveTab('image')}>Image</TabButton>
+          <TabButton active={activeTab === 'video'} onClick={() => setActiveTab('video')}>Video</TabButton>
+          <TabButton active={activeTab === 'voice'} onClick={() => setActiveTab('voice')}>Voice</TabButton>
+          <TabButton active={activeTab === 'script'} onClick={() => setActiveTab('script')}>Script</TabButton>
+          <TabButton active={activeTab === 'captions'} onClick={() => setActiveTab('captions')}>Captions</TabButton>
+          {user && <span className="hidden sm:inline-flex"><TabButton active={activeTab === 'history'} onClick={() => setActiveTab('history')}>Vault</TabButton></span>}
         </div>
 
         <div className="flex items-center gap-4">
           {user ? (
             <div className="flex items-center gap-4">
-              <div className="hidden lg:block text-right">
-                <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Credits</p>
-                <p className="text-xs font-mono text-brand-secondary">42 LEFT</p>
+              <div className="hidden xl:block text-right">
+                <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Balance</p>
+                <p className="text-xs font-mono text-brand-secondary">42 CREDITS</p>
               </div>
-              <img src={user.photoURL || ''} alt="avatar" className="w-10 h-10 rounded-full border border-white/20 bg-white/5" />
+              <img src={user.photoURL || ''} alt="avatar" className="w-9 h-9 rounded-full border border-white/20 bg-white/5" />
               <button 
                 onClick={logout}
                 className="p-2 hover:bg-white/5 rounded-lg transition-colors text-white/40 hover:text-white"
@@ -128,7 +130,7 @@ export default function App() {
           ) : (
             <button 
               onClick={login}
-              className="px-6 py-1.5 rounded-lg bg-white/10 text-white font-medium text-sm border border-white/20 hover:bg-white/20 transition-all font-bold tracking-tight"
+              className="px-5 py-1.5 rounded-lg bg-white/10 text-white font-bold text-xs border border-white/20 hover:bg-white/20 transition-all tracking-tight"
             >
               SIGN IN
             </button>
@@ -136,20 +138,23 @@ export default function App() {
         </div>
       </nav>
 
-      <main className="pt-18 min-h-screen flex flex-col md:flex-row relative z-10">
+      {/* Main Container */}
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative z-10">
         
         {/* Sidebar Nav Settings/Parameters */}
-        <aside className="w-full md:w-[320px] shrink-0 border-r border-white/10 flex flex-col p-6 space-y-6 bg-black/20">
+        <aside className="w-full md:w-[320px] shrink-0 border-r border-white/10 flex flex-col p-6 space-y-6 bg-black/20 overflow-y-auto">
           <AnimatePresence mode="wait">
             {activeTab === 'image' && <ImageControls key="img-ctrl" />}
             {activeTab === 'video' && <VideoControls key="vid-ctrl" />}
             {activeTab === 'voice' && <VoiceControls key="voice-ctrl" />}
+            {activeTab === 'script' && <ScriptControls key="script-ctrl" />}
+            {activeTab === 'captions' && <CaptionControls key="captions-ctrl" />}
             {activeTab === 'history' && <HistoryStats key="hist-stats" />}
           </AnimatePresence>
         </aside>
 
         {/* Main Workspace Area */}
-        <section className="grow p-8 flex flex-col gap-6 overflow-y-auto h-[calc(100vh-72px-32px)]">
+        <main className="flex-1 p-4 md:p-8 flex flex-col gap-6 overflow-hidden">
           {!user && activeTab !== 'history' && (
             <div className="flex-1 glass-panel border-dashed border-white/10 flex flex-col items-center justify-center text-center p-12">
                <div className="w-20 h-20 bg-brand-primary/10 rounded-full flex items-center justify-center mb-6">
@@ -162,17 +167,21 @@ export default function App() {
           )}
 
           {user && (
-            <AnimatePresence mode="wait">
-              {activeTab === 'image' && <ImageStudio userId={user.uid} />}
-              {activeTab === 'video' && <VideoLab userId={user.uid} />}
-              {activeTab === 'voice' && <VoiceForge userId={user.uid} />}
-              {activeTab === 'history' && <History userId={user.uid} />}
-            </AnimatePresence>
+            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+              <AnimatePresence mode="wait">
+                {activeTab === 'image' && <ImageStudio userId={user.uid} />}
+                {activeTab === 'video' && <VideoLab userId={user.uid} />}
+                {activeTab === 'voice' && <VoiceForge userId={user.uid} />}
+                {activeTab === 'script' && <ScriptStudio userId={user.uid} />}
+                {activeTab === 'captions' && <CaptionForge userId={user.uid} />}
+                {activeTab === 'history' && <History userId={user.uid} />}
+              </AnimatePresence>
+            </div>
           )}
-        </section>
-      </main>
+        </main>
+      </div>
 
-      <footer className="fixed bottom-0 w-full h-8 bg-black/80 backdrop-blur-md border-t border-white/5 flex items-center px-8 justify-between text-[10px] text-white/30 uppercase tracking-[0.2em] z-50">
+      <footer className="h-8 bg-black/80 backdrop-blur-md border-t border-white/5 flex items-center px-8 justify-between text-[10px] text-white/30 uppercase tracking-[0.2em] z-50 shrink-0">
         <div className="flex gap-6">
           <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div> API ACTIVE</span>
           <span>LATENCY: 18MS</span>
@@ -280,6 +289,49 @@ function HistoryStats() {
   );
 }
 
+function ScriptControls() {
+  return (
+    <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+      <div className="space-y-2">
+        <label className="label-caps">Tone Selection</label>
+        <div className="grid grid-cols-2 gap-2">
+          <button className="p-2 rounded-lg border border-brand-primary bg-brand-primary/10 text-[10px] uppercase font-bold text-brand-primary">Viral</button>
+          <button className="p-2 rounded-lg border border-white/10 bg-white/5 text-[10px] uppercase font-bold text-white/40">Educational</button>
+          <button className="p-2 rounded-lg border border-white/10 bg-white/5 text-[10px] uppercase font-bold text-white/40">Story</button>
+          <button className="p-2 rounded-lg border border-white/10 bg-white/5 text-[10px] uppercase font-bold text-white/40">Humorous</button>
+        </div>
+      </div>
+      <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+        <p className="text-[10px] text-white/40 leading-relaxed uppercase tracking-widest">Script engine uses Gemini 1.5 Flash for rapid semantic structuring.</p>
+      </div>
+    </motion.div>
+  );
+}
+
+function CaptionControls() {
+  return (
+    <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+      <div className="space-y-2">
+        <label className="label-caps">Platform Formats</label>
+        <div className="space-y-2">
+           <div className="flex items-center gap-2 p-2 rounded-lg bg-white/5 border border-white/10">
+              <input type="checkbox" defaultChecked className="accent-brand-primary" />
+              <span className="text-[10px] uppercase font-bold text-white/60">Short-form Reels</span>
+           </div>
+           <div className="flex items-center gap-2 p-2 rounded-lg bg-white/5 border border-white/10">
+              <input type="checkbox" defaultChecked className="accent-brand-primary" />
+              <span className="text-[10px] uppercase font-bold text-white/60">Long-form descriptions</span>
+           </div>
+           <div className="flex items-center gap-2 p-2 rounded-lg bg-white/5 border border-white/10 text-white/20">
+              <input type="checkbox" className="accent-brand-primary" />
+              <span className="text-[10px] uppercase font-bold">SEO Meta Data</span>
+           </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 function NavButton({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string }) {
   return (
     <button 
@@ -299,6 +351,155 @@ function NavButton({ active, onClick, icon, label }: { active: boolean, onClick:
       </div>
       <span className="font-medium text-sm">{label}</span>
     </button>
+  );
+}
+
+function ScriptStudio({ userId }: { userId: string }) {
+  const [topic, setTopic] = useState('');
+  const [platform, setPlatform] = useState('YouTube');
+  const [generating, setGenerating] = useState(false);
+  const [result, setResult] = useState('');
+
+  const handleGenerate = async () => {
+    if (!topic) return;
+    setGenerating(true);
+    try {
+      const res = await fetch('/api/generate-script', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic, platform }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setResult(data.script);
+      toast.success('Script drafted.');
+    } catch (e: any) {
+      toast.error(e.message || 'Generation failed');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 flex flex-col gap-6 h-full">
+      <div className="flex-1 glass-panel border-white/5 flex flex-col bg-black/40 overflow-hidden">
+        <div className="p-4 border-b border-white/5 flex justify-between items-center">
+          <span className="label-caps">Output Console</span>
+          {result && (
+            <button 
+              onClick={() => {
+                navigator.clipboard.writeText(result);
+                toast.success('Copied to clipboard');
+              }}
+              className="text-[10px] uppercase text-brand-primary font-bold"
+            >
+              Copy Script
+            </button>
+          )}
+        </div>
+        <div className="flex-1 p-6 overflow-y-auto font-mono text-sm leading-relaxed whitespace-pre-wrap text-white/80">
+          {result || (
+            <div className="h-full flex items-center justify-center text-white/10 uppercase tracking-widest text-[10px]">
+              {generating ? 'Transcribing Neural Patterns...' : 'Ready for script input'}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="h-[220px] shrink-0 glass-panel p-6 space-y-4 flex flex-col">
+        <div className="flex gap-4">
+          <div className="flex-1 space-y-2">
+            <label className="label-caps">Topic / Concept</label>
+            <input 
+              className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-brand-primary/50"
+              placeholder="e.g. Benefits of AI in 2026..."
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+            />
+          </div>
+          <div className="w-40 space-y-2">
+             <label className="label-caps">Platform</label>
+             <select 
+               className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm focus:outline-none"
+               value={platform}
+               onChange={(e) => setPlatform(e.target.value)}
+             >
+               <option>YouTube</option>
+               <option>TikTok</option>
+               <option>Instagram</option>
+               <option>Podcast</option>
+             </select>
+          </div>
+        </div>
+        <button 
+          disabled={generating || !topic}
+          onClick={handleGenerate}
+          className="neon-button disabled:opacity-50 py-3 tracking-widest uppercase text-xs"
+        >
+          {generating ? 'GENERATING...' : 'WRITE VIRAL SCRIPT'}
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+function CaptionForge({ userId }: { userId: string }) {
+  const [context, setContext] = useState('');
+  const [generating, setGenerating] = useState(false);
+  const [result, setResult] = useState('');
+
+  const handleGenerate = async () => {
+    if (!context) return;
+    setGenerating(true);
+    try {
+      const res = await fetch('/api/generate-captions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setResult(data.captions);
+      toast.success('Captions forged.');
+    } catch (e: any) {
+      toast.error(e.message || 'Forging failed');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 flex flex-col gap-6 h-full">
+      <div className="flex-1 glass-panel border-white/5 flex flex-col bg-black/40 overflow-hidden">
+        <div className="p-4 border-b border-white/5 flex justify-between items-center">
+          <span className="label-caps">Caption Manifest</span>
+        </div>
+        <div className="flex-1 p-6 overflow-y-auto font-mono text-xs leading-loose whitespace-pre-wrap text-white/80">
+          {result || (
+             <div className="h-full flex items-center justify-center text-white/10 uppercase tracking-widest text-[10px]">
+               {generating ? 'Extracting Virality...' : 'Waiting for context'}
+             </div>
+          )}
+        </div>
+      </div>
+
+      <div className="h-[200px] shrink-0 glass-panel p-6 space-y-4 flex flex-col">
+        <label className="label-caps">Content Context</label>
+        <textarea 
+          placeholder="Describe your video or photo for the AI to analyze..."
+          className="grow bg-white/5 border border-white/10 rounded-xl p-4 text-sm focus:outline-none focus:border-brand-primary/50 resize-none"
+          value={context}
+          onChange={(e) => setContext(e.target.value)}
+        />
+        <button 
+          disabled={generating || !context}
+          onClick={handleGenerate}
+          className="neon-button disabled:opacity-50 py-3 tracking-widest uppercase text-xs"
+        >
+          {generating ? 'ANALYZING...' : 'FORGE CAPTIONS'}
+        </button>
+      </div>
+    </motion.div>
   );
 }
 
@@ -471,15 +672,16 @@ function VideoLab({ userId }: { userId: string }) {
   const [prompt, setPrompt] = useState('');
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   const handleGenerate = async () => {
-    if (!prompt) return;
+    if (!prompt && !imageFile) return;
     setGenerating(true);
     try {
       const res = await fetch('/api/generate-video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt, hasImage: !!imageFile }),
       });
       const data = await res.json();
       
@@ -489,7 +691,7 @@ function VideoLab({ userId }: { userId: string }) {
         id: crypto.randomUUID(),
         userId,
         type: 'video',
-        prompt,
+        prompt: prompt || 'Image-to-Video Animation',
         url: data.videoUrl,
         createdAt: Timestamp.now()
       });
@@ -503,28 +705,46 @@ function VideoLab({ userId }: { userId: string }) {
   };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 flex flex-col gap-6 h-full">
-      <div className="flex-1 glass-panel border-white/5 flex flex-col items-center justify-center relative overflow-hidden bg-black/40 min-h-[300px]">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 flex flex-col gap-6 h-full pb-10">
+      <div className="flex-1 glass-panel border-white/5 flex flex-col items-center justify-center relative overflow-hidden bg-black/40 min-h-[350px]">
         {result ? (
           <video src={result} controls className="w-full h-full object-contain" />
         ) : (
-          <div className="text-center p-12 relative z-10">
+          <div className="text-center p-12 relative z-10 w-full max-w-md">
             <Video className="w-16 h-16 text-white/5 mx-auto mb-4" strokeWidth={1} />
-            <p className="text-white/20 font-mono text-[10px] uppercase tracking-[0.3em]">{generating ? 'Rendering Motion Vectors...' : 'Motion Engine Idle'}</p>
+            <p className="text-white/20 font-mono text-[10px] uppercase tracking-[0.3em] mb-8">{generating ? 'Rendering Motion Vectors...' : 'Motion Engine Idle'}</p>
+            
+            {!generating && (
+              <div className="flex flex-col gap-4">
+                <label className="flex flex-col items-center gap-2 p-6 border-2 border-dashed border-white/5 rounded-2xl hover:border-brand-primary/30 transition-all cursor-pointer bg-white/2">
+                  <ImageIcon className="w-6 h-6 text-white/20" />
+                  <span className="text-[10px] uppercase font-bold text-white/30 tracking-widest">{imageFile ? imageFile.name : 'Upload Image to Animate'}</span>
+                  <input 
+                    type="file" 
+                    className="hidden" 
+                    accept="image/*" 
+                    onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                  />
+                </label>
+                {imageFile && (
+                  <button onClick={() => setImageFile(null)} className="text-[9px] text-red-500/60 hover:text-red-500 uppercase font-bold tracking-widest">Remove Image</button>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      <div className="h-[220px] shrink-0 glass-panel p-6 space-y-4 flex flex-col">
+      <div className="shrink-0 glass-panel p-6 space-y-4 flex flex-col">
         <label className="label-caps">Motion Script</label>
         <textarea 
-          placeholder="Cinema 4D render of floating liquid gold, slow motion..."
-          className="grow bg-white/5 border border-white/10 rounded-xl p-4 text-sm focus:outline-none focus:border-brand-primary/50 resize-none font-medium placeholder:text-white/20 transition-all shadow-inner"
+          placeholder="Cinema 4D render of floating liquid gold, slow motion... (Optional if image provided)"
+          className="grow min-h-[100px] bg-white/5 border border-white/10 rounded-xl p-4 text-sm focus:outline-none focus:border-brand-primary/50 resize-none font-medium placeholder:text-white/20 transition-all shadow-inner"
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
         />
         <button 
-          disabled={generating || !prompt}
+          disabled={generating || (!prompt && !imageFile)}
           onClick={handleGenerate}
           className="neon-button disabled:opacity-50 py-3 tracking-widest uppercase text-xs"
         >
