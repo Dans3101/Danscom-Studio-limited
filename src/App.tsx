@@ -52,6 +52,16 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>('image');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Shared state for controls
+  const [scriptTone, setScriptTone] = useState('Viral');
+  const [captionFormats, setCaptionFormats] = useState(['reels', 'long']);
+  const [imgModel, setImgModel] = useState('SDV 1.5');
+  const [imgGuidance, setImgGuidance] = useState(7.5);
+  const [imgSteps, setImgSteps] = useState(50);
+  const [vidLength, setVidLength] = useState('2S');
+  const [voiceStyle, setVoiceStyle] = useState('dynamic');
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
@@ -84,54 +94,60 @@ export default function App() {
   }
 
   return (
-    <div className="h-screen w-screen bg-bg-dark text-white selection:bg-brand-primary/30 relative overflow-hidden flex flex-col">
+    <div className="h-screen w-screen bg-bg-dark text-white selection:bg-brand-primary/30 relative overflow-hidden flex flex-col font-sans">
       <Toaster position="bottom-right" toastOptions={{
         style: { background: '#1a1a1a', color: '#fff', border: '1px solid #333' }
       }} />
 
       {/* Atmospheric Blobs */}
-      <div className="atmospheric-blobs">
+      <div className="atmospheric-blobs pointer-events-none">
         <div className="blob-purple"></div>
         <div className="blob-blue"></div>
       </div>
       
       {/* Navbar */}
-      <nav className="h-[72px] shrink-0 px-8 border-b border-white/10 bg-black/40 backdrop-blur-md flex items-center justify-between relative z-50">
+      <nav className="h-[72px] shrink-0 px-4 md:px-8 border-b border-white/10 bg-black/40 backdrop-blur-md flex items-center justify-between relative z-50">
         <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="md:hidden p-2 hover:bg-white/5 rounded-lg text-white/60"
+          >
+            <LayoutDashboard className="w-5 h-5" />
+          </button>
           <div className="w-8 h-8 bg-gradient-to-tr from-brand-primary to-brand-secondary rounded-lg flex items-center justify-center font-bold text-black text-lg shadow-[0_0_20px_rgba(112,0,255,0.4)]">
             D
           </div>
           <span className="text-xl font-semibold tracking-tight hidden lg:block">Danscom AI Studio</span>
         </div>
 
-        <div className="nav-pill scale-90 md:scale-100">
-          <TabButton active={activeTab === 'image'} onClick={() => setActiveTab('image')}>Image</TabButton>
-          <TabButton active={activeTab === 'video'} onClick={() => setActiveTab('video')}>Video</TabButton>
-          <TabButton active={activeTab === 'voice'} onClick={() => setActiveTab('voice')}>Voice</TabButton>
-          <TabButton active={activeTab === 'script'} onClick={() => setActiveTab('script')}>Script</TabButton>
-          <TabButton active={activeTab === 'captions'} onClick={() => setActiveTab('captions')}>Captions</TabButton>
-          {user && <span className="hidden sm:inline-flex"><TabButton active={activeTab === 'history'} onClick={() => setActiveTab('history')}>Vault</TabButton></span>}
+        <div className="nav-pill scale-75 md:scale-100 overflow-x-auto max-w-[50vw] no-scrollbar">
+          <TabButton active={activeTab === 'image'} onClick={() => { setActiveTab('image'); setSidebarOpen(false); }}>Image</TabButton>
+          <TabButton active={activeTab === 'video'} onClick={() => { setActiveTab('video'); setSidebarOpen(false); }}>Video</TabButton>
+          <TabButton active={activeTab === 'voice'} onClick={() => { setActiveTab('voice'); setSidebarOpen(false); }}>Voice</TabButton>
+          <TabButton active={activeTab === 'script'} onClick={() => { setActiveTab('script'); setSidebarOpen(false); }}>Script</TabButton>
+          <TabButton active={activeTab === 'captions'} onClick={() => { setActiveTab('captions'); setSidebarOpen(false); }}>Captions</TabButton>
+          {user && <span className="hidden sm:inline-flex"><TabButton active={activeTab === 'history'} onClick={() => { setActiveTab('history'); setSidebarOpen(false); }}>Vault</TabButton></span>}
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 md:gap-4">
           {user ? (
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 md:gap-4">
               <div className="hidden xl:block text-right">
                 <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Balance</p>
                 <p className="text-xs font-mono text-brand-secondary">42 CREDITS</p>
               </div>
-              <img src={user.photoURL || ''} alt="avatar" className="w-9 h-9 rounded-full border border-white/20 bg-white/5" />
+              <img src={user.photoURL || ''} alt="avatar" className="w-8 h-8 md:w-9 md:h-9 rounded-full border border-white/20 bg-white/5" />
               <button 
                 onClick={logout}
                 className="p-2 hover:bg-white/5 rounded-lg transition-colors text-white/40 hover:text-white"
               >
-                <LogOut className="w-5 h-5" />
+                <LogOut className="w-4 h-4 md:w-5 md:h-5" />
               </button>
             </div>
           ) : (
             <button 
               onClick={login}
-              className="px-5 py-1.5 rounded-lg bg-white/10 text-white font-bold text-xs border border-white/20 hover:bg-white/20 transition-all tracking-tight"
+              className="px-3 md:px-5 py-1.5 rounded-lg bg-white/10 text-white font-bold text-[10px] md:text-xs border border-white/20 hover:bg-white/20 transition-all tracking-tight"
             >
               SIGN IN
             </button>
@@ -143,27 +159,48 @@ export default function App() {
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative z-10">
         
         {/* Sidebar Nav Settings/Parameters */}
-        <aside className="w-full md:w-[320px] shrink-0 border-r border-white/10 flex flex-col p-6 space-y-6 bg-black/20 overflow-y-auto">
+        <aside className={cn(
+          "fixed inset-y-0 left-0 z-40 w-[280px] md:w-[320px] md:relative md:translate-x-0 transition-transform duration-300 ease-in-out border-r border-white/10 flex flex-col p-6 space-y-6 bg-[#0a0a0a] md:bg-black/20 overflow-y-auto",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        )}>
+          <div className="flex items-center justify-between md:hidden">
+            <span className="label-caps">Parameters</span>
+            <button onClick={() => setSidebarOpen(false)} className="text-white/40">×</button>
+          </div>
           <AnimatePresence mode="wait">
-            {activeTab === 'image' && <ImageControls key="img-ctrl" />}
-            {activeTab === 'video' && <VideoControls key="vid-ctrl" />}
-            {activeTab === 'voice' && <VoiceControls key="voice-ctrl" />}
-            {activeTab === 'script' && <ScriptControls key="script-ctrl" />}
-            {activeTab === 'captions' && <CaptionControls key="captions-ctrl" />}
+            {activeTab === 'image' && (
+              <ImageControls 
+                key="img-ctrl" model={imgModel} setModel={setImgModel} 
+                guidance={imgGuidance} setGuidance={setImgGuidance} 
+                steps={imgSteps} setSteps={setImgSteps} 
+              />
+            )}
+            {activeTab === 'video' && <VideoControls key="vid-ctrl" length={vidLength} setLength={setVidLength} />}
+            {activeTab === 'voice' && <VoiceControls key="voice-ctrl" style={voiceStyle} setStyle={setVoiceStyle} />}
+            {activeTab === 'script' && <ScriptControls key="script-ctrl" tone={scriptTone} setTone={setScriptTone} />}
+            {activeTab === 'captions' && <CaptionControls key="captions-ctrl" format={captionFormats} setFormat={setCaptionFormats} />}
             {activeTab === 'history' && <HistoryStats key="hist-stats" />}
           </AnimatePresence>
         </aside>
 
+        {/* Backdrop for mobile sidebar */}
+        {sidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
         {/* Main Workspace Area */}
-        <main className="flex-1 p-4 md:p-8 flex flex-col gap-6 overflow-hidden">
+        <main className="flex-1 p-4 md:p-8 flex flex-col gap-6 overflow-hidden relative">
           {!user && activeTab !== 'history' && (
-            <div className="flex-1 glass-panel border-dashed border-white/10 flex flex-col items-center justify-center text-center p-12">
-               <div className="w-20 h-20 bg-brand-primary/10 rounded-full flex items-center justify-center mb-6">
-                 <Sparkles className="w-10 h-10 text-brand-primary" />
+            <div className="flex-1 glass-panel border-dashed border-white/10 flex flex-col items-center justify-center text-center p-6 md:p-12">
+               <div className="w-16 h-16 md:w-20 md:h-20 bg-brand-primary/10 rounded-full flex items-center justify-center mb-6">
+                 <Sparkles className="w-8 h-8 md:w-10 md:h-10 text-brand-primary" />
                </div>
-               <h2 className="text-3xl font-bold mb-3 tracking-tight">Enter the Infinite Forge</h2>
-               <p className="text-white/40 max-w-sm mb-8 italic">Where imagination meets neural architecture. Sign in to start your journey.</p>
-               <button onClick={login} className="neon-button">Connect with Neural ID</button>
+               <h2 className="text-2xl md:text-3xl font-bold mb-3 tracking-tight">Enter the Infinite Forge</h2>
+               <p className="text-white/40 max-w-sm mb-8 italic text-sm">Where imagination meets neural architecture. Sign in to start your journey.</p>
+               <button onClick={login} className="neon-button px-8">Connect with Neural ID</button>
             </div>
           )}
 
@@ -171,11 +208,16 @@ export default function App() {
             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
               <ErrorBoundary>
                 <AnimatePresence mode="wait">
-                  {activeTab === 'image' && <ImageStudio userId={user.uid} />}
-                  {activeTab === 'video' && <VideoLab userId={user.uid} />}
-                  {activeTab === 'voice' && <VoiceForge userId={user.uid} />}
-                  {activeTab === 'script' && <ScriptStudio userId={user.uid} />}
-                  {activeTab === 'captions' && <CaptionForge userId={user.uid} />}
+                  {activeTab === 'image' && (
+                    <ImageStudio 
+                      userId={user.uid} 
+                      model={imgModel} guidance={imgGuidance} steps={imgSteps} 
+                    />
+                  )}
+                  {activeTab === 'video' && <VideoLab userId={user.uid} length={vidLength} />}
+                  {activeTab === 'voice' && <VoiceForge userId={user.uid} style={voiceStyle} />}
+                  {activeTab === 'script' && <ScriptStudio userId={user.uid} tone={scriptTone} />}
+                  {activeTab === 'captions' && <CaptionForge userId={user.uid} formats={captionFormats} />}
                   {activeTab === 'history' && <History userId={user.uid} />}
                 </AnimatePresence>
               </ErrorBoundary>
@@ -253,40 +295,77 @@ function TabButton({ active, onClick, children }: { active: boolean, onClick: ()
   );
 }
 
-function ImageControls() {
+function ImageControls({ model, setModel, guidance, setGuidance, steps, setSteps }: { 
+  model: string, setModel: (m: string) => void, 
+  guidance: number, setGuidance: (g: number) => void,
+  steps: number, setSteps: (s: number) => void,
+  key?: string
+}) {
   return (
     <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
       <div className="space-y-2">
         <label className="label-caps">Neural Model</label>
         <div className="grid grid-cols-2 gap-2">
-          <button className="p-2 rounded-lg border border-brand-primary bg-brand-primary/10 text-[10px] uppercase font-bold text-brand-primary tracking-wider">SDXL Turbo</button>
-          <button className="p-2 rounded-lg border border-white/10 bg-white/5 text-[10px] uppercase font-bold text-white/40 tracking-wider">Midney V6</button>
+          {['SDV 1.5', 'SDXL BASE'].map(m => (
+            <button 
+              key={m}
+              onClick={() => setModel(m)}
+              className={cn(
+                "p-2 rounded-lg border text-[10px] uppercase font-bold tracking-wider",
+                model === m ? "border-brand-primary bg-brand-primary/10 text-brand-primary" : "border-white/10 bg-white/5 text-white/40"
+              )}
+            >
+              {m}
+            </button>
+          ))}
         </div>
       </div>
       <div className="space-y-4">
         <label className="label-caps block">Parameters</label>
         <div className="space-y-3">
-          <div className="flex justify-between items-center"><span className="text-[10px] text-white/40 uppercase font-mono">Guidance</span><span className="text-[10px] font-mono">7.5</span></div>
-          <div className="h-1 bg-white/10 rounded-full overflow-hidden"><div className="h-full w-[75%] bg-gradient-to-r from-brand-primary to-brand-secondary"></div></div>
+          <div className="flex justify-between items-center">
+            <span className="text-[10px] text-white/40 uppercase font-mono">Guidance</span>
+            <span className="text-[10px] font-mono">{guidance}</span>
+          </div>
+          <input 
+            type="range" min="1" max="20" step="0.5" value={guidance} onChange={(e) => setGuidance(parseFloat(e.target.value))}
+            className="w-full transition-all accent-brand-primary h-1 bg-white/10 rounded-full appearance-none cursor-pointer"
+          />
         </div>
         <div className="space-y-3">
-          <div className="flex justify-between items-center"><span className="text-[10px] text-white/40 uppercase font-mono">Steps</span><span className="text-[10px] font-mono">50</span></div>
-          <div className="h-1 bg-white/10 rounded-full overflow-hidden"><div className="h-full w-[50%] bg-gradient-to-r from-brand-primary to-brand-secondary"></div></div>
+          <div className="flex justify-between items-center">
+            <span className="text-[10px] text-white/40 uppercase font-mono">Steps</span>
+            <span className="text-[10px] font-mono">{steps}</span>
+          </div>
+          <input 
+            type="range" min="10" max="100" step="1" value={steps} onChange={(e) => setSteps(parseInt(e.target.value))}
+            className="w-full transition-all accent-brand-primary h-1 bg-white/10 rounded-full appearance-none cursor-pointer"
+          />
         </div>
       </div>
     </motion.div>
   );
 }
 
-function VideoControls() {
+function VideoControls({ length, setLength }: { length: string, setLength: (l: string) => void, key?: string }) {
+  const lengths = ['2S', '4S', '10S'];
   return (
     <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
       <div className="space-y-2">
         <label className="label-caps">Sequence Length</label>
         <div className="grid grid-cols-3 gap-2">
-          <button className="p-2 rounded-lg border border-brand-primary bg-brand-primary/10 text-[10px] font-bold text-brand-primary">2S</button>
-          <button className="p-2 rounded-lg border border-white/10 bg-white/5 text-[10px] font-bold text-white/40">4S</button>
-          <button className="p-2 rounded-lg border border-white/10 bg-white/5 text-[10px] font-bold text-white/40">10S</button>
+          {lengths.map(l => (
+            <button 
+              key={l}
+              onClick={() => setLength(l)}
+              className={cn(
+                "p-2 rounded-lg border text-[10px] font-bold transition-all",
+                length === l ? "border-brand-primary bg-brand-primary/10 text-brand-primary" : "border-white/10 bg-white/5 text-white/40"
+              )}
+            >
+              {l}
+            </button>
+          ))}
         </div>
       </div>
       <div className="p-4 rounded-xl bg-brand-secondary/5 border border-brand-secondary/20">
@@ -296,20 +375,29 @@ function VideoControls() {
   );
 }
 
-function VoiceControls() {
+function VoiceControls({ style, setStyle }: { style: string, setStyle: (s: string) => void, key?: string }) {
+  const styles = [
+    { id: 'dynamic', label: 'Dynamic Range' },
+    { id: 'soft', label: 'Soft & Neural' }
+  ];
   return (
     <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
       <div className="space-y-2">
         <label className="label-caps">Acoustic Style</label>
         <div className="flex flex-col gap-2">
-           <button className="p-3 rounded-xl bg-brand-primary/10 border border-brand-primary text-left flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-tight">Dynamic Range</span>
-              <Mic className="w-3 h-3 text-brand-primary" />
-           </button>
-           <button className="p-3 rounded-xl bg-white/5 border border-white/10 text-left flex items-center justify-between text-white/40">
-              <span className="text-xs font-bold uppercase tracking-tight text-white/40">Soft & Neural</span>
-              <Mic className="w-3 h-3" />
-           </button>
+           {styles.map(s => (
+             <button 
+               key={s.id}
+               onClick={() => setStyle(s.id)}
+               className={cn(
+                 "p-3 rounded-xl border text-left flex items-center justify-between transition-all",
+                 style === s.id ? "bg-brand-primary/10 border-brand-primary text-white" : "bg-white/5 border-white/10 text-white/40"
+               )}
+             >
+                <span className="text-xs font-bold uppercase tracking-tight">{s.label}</span>
+                <Mic className={cn("w-3 h-3 transition-colors", style === s.id ? "text-brand-primary": "text-white/20")} />
+             </button>
+           ))}
         </div>
       </div>
     </motion.div>
@@ -330,16 +418,27 @@ function HistoryStats() {
   );
 }
 
-function ScriptControls() {
+function ScriptControls({ tone, setTone }: { tone: string, setTone: (t: string) => void, key?: string }) {
+  const tones = ['Viral', 'Educational', 'Story', 'Humorous'];
   return (
     <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
       <div className="space-y-2">
         <label className="label-caps">Tone Selection</label>
         <div className="grid grid-cols-2 gap-2">
-          <button className="p-2 rounded-lg border border-brand-primary bg-brand-primary/10 text-[10px] uppercase font-bold text-brand-primary">Viral</button>
-          <button className="p-2 rounded-lg border border-white/10 bg-white/5 text-[10px] uppercase font-bold text-white/40">Educational</button>
-          <button className="p-2 rounded-lg border border-white/10 bg-white/5 text-[10px] uppercase font-bold text-white/40">Story</button>
-          <button className="p-2 rounded-lg border border-white/10 bg-white/5 text-[10px] uppercase font-bold text-white/40">Humorous</button>
+          {tones.map(t => (
+            <button 
+              key={t}
+              onClick={() => setTone(t)}
+              className={cn(
+                "p-2 rounded-lg border text-[10px] uppercase font-bold transition-all",
+                tone === t 
+                  ? "border-brand-primary bg-brand-primary/10 text-brand-primary" 
+                  : "border-white/10 bg-white/5 text-white/40"
+              )}
+            >
+              {t}
+            </button>
+          ))}
         </div>
       </div>
       <div className="p-4 rounded-xl bg-white/5 border border-white/10">
@@ -349,24 +448,38 @@ function ScriptControls() {
   );
 }
 
-function CaptionControls() {
+function CaptionControls({ format, setFormat }: { format: string[], setFormat: (f: string[]) => void, key?: string }) {
+  const formats = [
+    { id: 'reels', label: 'Short-form Reels' },
+    { id: 'long', label: 'Long-form descriptions' },
+    { id: 'seo', label: 'SEO Meta Data' }
+  ];
+
+  const toggle = (id: string) => {
+    if (format.includes(id)) setFormat(format.filter(f => f !== id));
+    else setFormat([...format, id]);
+  };
+
   return (
     <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
       <div className="space-y-2">
         <label className="label-caps">Platform Formats</label>
         <div className="space-y-2">
-           <div className="flex items-center gap-2 p-2 rounded-lg bg-white/5 border border-white/10">
-              <input type="checkbox" defaultChecked className="accent-brand-primary" />
-              <span className="text-[10px] uppercase font-bold text-white/60">Short-form Reels</span>
-           </div>
-           <div className="flex items-center gap-2 p-2 rounded-lg bg-white/5 border border-white/10">
-              <input type="checkbox" defaultChecked className="accent-brand-primary" />
-              <span className="text-[10px] uppercase font-bold text-white/60">Long-form descriptions</span>
-           </div>
-           <div className="flex items-center gap-2 p-2 rounded-lg bg-white/5 border border-white/10 text-white/20">
-              <input type="checkbox" className="accent-brand-primary" />
-              <span className="text-[10px] uppercase font-bold">SEO Meta Data</span>
-           </div>
+           {formats.map(f => (
+             <button 
+               key={f.id}
+               onClick={() => toggle(f.id)}
+               className={cn(
+                 "w-full flex items-center gap-2 p-3 rounded-lg bg-white/5 border transition-all",
+                 format.includes(f.id) ? "border-brand-primary/40 bg-brand-primary/5" : "border-white/10"
+               )}
+             >
+                <div className={cn("w-3 h-3 rounded border transition-all", format.includes(f.id) ? "bg-brand-primary border-brand-primary" : "border-white/20")}>
+                  {format.includes(f.id) && <Sparkles className="w-2 h-2 text-white mx-auto mt-0.5" />}
+                </div>
+                <span className={cn("text-[10px] uppercase font-bold transition-colors", format.includes(f.id) ? "text-white" : "text-white/40")}>{f.label}</span>
+             </button>
+           ))}
         </div>
       </div>
     </motion.div>
@@ -395,7 +508,7 @@ function NavButton({ active, onClick, icon, label }: { active: boolean, onClick:
   );
 }
 
-function ScriptStudio({ userId }: { userId: string }) {
+function ScriptStudio({ userId, tone }: { userId: string, tone: string }) {
   const [topic, setTopic] = useState('');
   const [platform, setPlatform] = useState('YouTube');
   const [generating, setGenerating] = useState(false);
@@ -408,7 +521,7 @@ function ScriptStudio({ userId }: { userId: string }) {
       const res = await fetch('/api/generate-script', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic, platform }),
+        body: JSON.stringify({ topic, platform, tone }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
@@ -484,7 +597,7 @@ function ScriptStudio({ userId }: { userId: string }) {
   );
 }
 
-function CaptionForge({ userId }: { userId: string }) {
+function CaptionForge({ userId, formats }: { userId: string, formats: string[] }) {
   const [context, setContext] = useState('');
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState('');
@@ -496,7 +609,7 @@ function CaptionForge({ userId }: { userId: string }) {
       const res = await fetch('/api/generate-captions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ context }),
+        body: JSON.stringify({ context, formats }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
@@ -544,7 +657,9 @@ function CaptionForge({ userId }: { userId: string }) {
   );
 }
 
-function ImageStudio({ userId }: { userId: string }) {
+function ImageStudio({ userId, model, guidance, steps }: { 
+  userId: string, model: string, guidance: number, steps: number 
+}) {
   const [prompt, setPrompt] = useState('');
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState<string | null>(null);
@@ -552,16 +667,20 @@ function ImageStudio({ userId }: { userId: string }) {
   const handleGenerate = async () => {
     if (!prompt) return;
     setGenerating(true);
+    setResult(null);
     try {
       const res = await fetch('/api/generate-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt, model, guidance, steps }),
       });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
       
-      setResult(data.imageUrl);
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: 'Unknown synthesis error' }));
+        throw new Error(errorData.error || 'Failed to communicate with Neural Nexus');
+      }
+
+      const data = await res.json();
       
       // Fun effect
       import('canvas-confetti').then(confetti => {
@@ -709,7 +828,7 @@ function AspectRatioPill({ active, onClick, children }: { active: boolean, onCli
   );
 }
 
-function VideoLab({ userId }: { userId: string }) {
+function VideoLab({ userId, length }: { userId: string, length: string }) {
   const [prompt, setPrompt] = useState('');
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState<string | null>(null);
@@ -718,14 +837,21 @@ function VideoLab({ userId }: { userId: string }) {
   const handleGenerate = async () => {
     if (!prompt && !imageFile) return;
     setGenerating(true);
+    setResult(null);
     try {
       // Simulation delay for transparency
       await new Promise(r => setTimeout(r, 2500));
       const res = await fetch('/api/generate-video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, hasImage: !!imageFile }),
+        body: JSON.stringify({ prompt, hasImage: !!imageFile, length }),
       });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: 'Simulation engine failure' }));
+        throw new Error(errorData.error || 'Sequence synthesis unreachable');
+      }
+
       const data = await res.json();
       
       setResult(data.videoUrl);
@@ -802,7 +928,7 @@ function VideoLab({ userId }: { userId: string }) {
   );
 }
 
-function VoiceForge({ userId }: { userId: string }) {
+function VoiceForge({ userId, style }: { userId: string, style: string }) {
   const [text, setText] = useState('');
   const [speaking, setSpeaking] = useState(false);
   const [voice, setVoice] = useState<SpeechSynthesisVoice | null>(null);
