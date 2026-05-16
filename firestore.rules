@@ -1,0 +1,75 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helper Primitives ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isEmailVerified() {
+      return request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Entity Validations ---
+
+    function isValidGeneration(data) {
+      return data.keys().hasAll(['id', 'userId', 'type', 'prompt', 'url', 'createdAt'])
+        && data.id is string && data.id.size() <= 128
+        && data.userId == request.auth.uid
+        && data.type in ['image', 'video', 'voice']
+        && data.prompt is string && data.prompt.size() <= 2000
+        && data.url is string && data.url.size() <= 2048
+        && data.createdAt == request.time;
+    }
+
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['userId', 'email', 'createdAt'])
+        && data.userId == request.auth.uid
+        && data.email is string && data.email.size() <= 256
+        && data.createdAt == request.time
+        && (!('credits' in data) || data.credits is number);
+    }
+
+    // --- Collection Routes ---
+
+    match /users/{userId} {
+      // Allow users to manage their own profile
+      match /profile {
+        allow get: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidUserProfile(incoming());
+        allow update: if isOwner(userId) && isValidUserProfile(incoming())
+          && !!incoming().diff(existing()).affectedKeys().hasOnly(['email', 'displayName', 'photoURL', 'credits']);
+      }
+
+      // Allow users to manage their generations
+      match /generations/{genId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidGeneration(incoming()) && isValidId(genId);
+        allow delete: if isOwner(userId);
+        // Updates are generally not allowed for generations once created
+      }
+    }
+  }
+}

@@ -1,11 +1,28 @@
-<div align="center">
+# Danscom AI Studio
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+A production-ready AI content generation platform.
 
-  <h1>Built with AI Studio</h2>
+## Features
+- **AI Image Generation**: Powered by Stable Diffusion via HuggingFace.
+- **AI Video Generation**: Simulated sequence rendering (RunwayML ready).
+- **AI Voice Synthesis**: Real-time browser-based text-to-speech.
+- **Secure Auth**: Firebase Authentication with Google Login.
+- **cloud Storage**: Firestore-powered generation history.
+- **Futuristic UI**: High-performance dark mode interface with motion effects.
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+## Setup
+1. Clone the repository.
+2. Install dependencies: `npm install`
+3. Configure `.env` with your API keys:
+   - `GEMINI_API_KEY`: Provided by AI Studio
+   - `HUGGINGFACE_API_KEY`: Get from [HuggingFace](https://huggingface.co/settings/tokens)
+4. Run development: `npm run dev`
+5. Build for production: `npm run build`
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+## Tech Stack
+- **Frontend**: React, Tailwind CSS, Motion (Framer Motion), Lucide Icons.
+- **Backend**: Node.js, Express, TSX.
+- **Database/Auth**: Firebase (Firestore, Auth).
 
-</div>
+## Deployment
+Compatible with Cloud Run, Render, and Vercel.

@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-primary: #7000ff;
+  --color-brand-secondary: #00d1ff;
+  --color-brand-accent: #9d50bb;
+  --color-bg-dark: #050505;
+  --color-bg-card: #0a0a0a;
+}
+
+@layer base {
+  body {
+    @apply bg-bg-dark text-white font-sans antialiased selection:bg-brand-primary/30;
+  }
+}
+
+.glass-panel {
+  @apply bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl;
+}
+
+.atmospheric-blobs {
+  @apply absolute inset-0 pointer-events-none overflow-hidden;
+}
+
+.blob-purple {
+  @apply absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-primary opacity-10 blur-[120px] rounded-full;
+}
+
+.blob-blue {
+  @apply absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-brand-secondary opacity-10 blur-[150px] rounded-full;
+}
+
+.neon-button {
+  @apply relative overflow-hidden bg-gradient-to-r from-brand-primary to-brand-accent text-white font-bold px-6 py-3 rounded-xl transition-all hover:brightness-110 active:scale-95 shadow-[0_0_20px_rgba(112,0,255,0.3)];
+}
+
+.nav-pill {
+  @apply bg-white/5 p-1 rounded-xl border border-white/10 flex gap-1;
+}
+
+.label-caps {
+  @apply text-[11px] font-bold uppercase tracking-widest text-white/40;
+}
