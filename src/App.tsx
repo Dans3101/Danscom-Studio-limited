@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
 import { auth, googleProvider, db } from './lib/firebase';
 import { 
   signInWithPopup, 
@@ -28,7 +28,8 @@ import {
   Download,
   Trash2,
   ExternalLink,
-  Loader2
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Toaster, toast } from 'react-hot-toast';
@@ -168,14 +169,16 @@ export default function App() {
 
           {user && (
             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-              <AnimatePresence mode="wait">
-                {activeTab === 'image' && <ImageStudio userId={user.uid} />}
-                {activeTab === 'video' && <VideoLab userId={user.uid} />}
-                {activeTab === 'voice' && <VoiceForge userId={user.uid} />}
-                {activeTab === 'script' && <ScriptStudio userId={user.uid} />}
-                {activeTab === 'captions' && <CaptionForge userId={user.uid} />}
-                {activeTab === 'history' && <History userId={user.uid} />}
-              </AnimatePresence>
+              <ErrorBoundary>
+                <AnimatePresence mode="wait">
+                  {activeTab === 'image' && <ImageStudio userId={user.uid} />}
+                  {activeTab === 'video' && <VideoLab userId={user.uid} />}
+                  {activeTab === 'voice' && <VoiceForge userId={user.uid} />}
+                  {activeTab === 'script' && <ScriptStudio userId={user.uid} />}
+                  {activeTab === 'captions' && <CaptionForge userId={user.uid} />}
+                  {activeTab === 'history' && <History userId={user.uid} />}
+                </AnimatePresence>
+              </ErrorBoundary>
             </div>
           )}
         </main>
@@ -195,6 +198,44 @@ export default function App() {
 }
 
 // --- Subcomponents ---
+
+interface ErrorBoundaryProps {
+  children: ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+}
+
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  public state: ErrorBoundaryState;
+  public props: ErrorBoundaryProps;
+  
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.props = props;
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError(_: Error): ErrorBoundaryState {
+    return { hasError: true };
+  }
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error("ErrorBoundary caught an error", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex-1 glass-panel border-red-500/20 flex flex-col items-center justify-center p-12 text-center h-full">
+          <AlertCircle className="w-12 h-12 text-red-500 mb-4 opacity-50" />
+          <h3 className="text-lg font-bold text-red-500 uppercase tracking-widest mb-2">Neural Interface Crash</h3>
+          <p className="text-xs text-white/40 uppercase tracking-widest leading-loose max-w-xs">A cognitive error occurred in this module. Reboots recommended.</p>
+          <button onClick={() => window.location.reload()} className="mt-6 text-[10px] text-brand-primary font-bold uppercase tracking-[0.2em] border border-brand-primary/20 px-4 py-2 rounded-lg hover:bg-brand-primary/10 transition-all">Manually Restart Core</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function TabButton({ active, onClick, children }: { active: boolean, onClick: () => void, children: React.ReactNode }) {
   return (
@@ -678,6 +719,8 @@ function VideoLab({ userId }: { userId: string }) {
     if (!prompt && !imageFile) return;
     setGenerating(true);
     try {
+      // Simulation delay for transparency
+      await new Promise(r => setTimeout(r, 2500));
       const res = await fetch('/api/generate-video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -691,12 +734,12 @@ function VideoLab({ userId }: { userId: string }) {
         id: crypto.randomUUID(),
         userId,
         type: 'video',
-        prompt: prompt || 'Image-to-Video Animation',
+        prompt: prompt || 'Image-to-Video Animation (Simulation)',
         url: data.videoUrl,
         createdAt: Timestamp.now()
       });
 
-      toast.success('Sequence synthesized.');
+      toast.success('Simulation rendered.');
     } catch (e: any) {
       toast.error('Synthesis failure');
     } finally {
@@ -706,6 +749,10 @@ function VideoLab({ userId }: { userId: string }) {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 flex flex-col gap-6 h-full pb-10">
+      <div className="absolute top-4 right-4 z-20 px-3 py-1 bg-brand-primary/10 border border-brand-primary/20 rounded-full flex items-center gap-1.5">
+         <div className="w-1.5 h-1.5 rounded-full bg-brand-primary animate-pulse" />
+         <span className="text-[10px] text-brand-primary font-bold uppercase tracking-widest">Simulation Mode</span>
+      </div>
       <div className="flex-1 glass-panel border-white/5 flex flex-col items-center justify-center relative overflow-hidden bg-black/40 min-h-[350px]">
         {result ? (
           <video src={result} controls className="w-full h-full object-contain" />

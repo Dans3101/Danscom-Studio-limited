@@ -3,6 +3,7 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 import cors from "cors";
+import rateLimit from "express-rate-limit";
 import apiRouter from "./server/routes/api";
 
 // Load environment variables
@@ -10,11 +11,20 @@ dotenv.config();
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
+
+  // Rate Limiting
+  const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    limit: 100, // Limit each IP to 100 requests per windowMs
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+  });
 
   // Middleware
   app.use(cors());
   app.use(express.json());
+  app.use("/api", limiter);
 
   // API Routes
   app.use("/api", apiRouter);

@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import fetch from 'node-fetch';
 
 export const generateImage = async (req: Request, res: Response) => {
     const { prompt } = req.body;
