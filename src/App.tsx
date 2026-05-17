@@ -66,8 +66,10 @@ export default function App() {
   const [imgSteps, setImgSteps] = useState(50);
   const [vidLength, setVidLength] = useState('2S');
   const [voiceStyle, setVoiceStyle] = useState('dynamic');
-  const [voiceCharacter, setVoiceCharacter] = useState('Aura'); // New: Unique voice presets
-  const [scriptIndustry, setScriptIndustry] = useState('Tech'); // New: Marketable industries
+  const [voiceCharacter, setVoiceCharacter] = useState('Aura');
+  const [voicePitch, setVoicePitch] = useState(1.1);
+  const [voiceRate, setVoiceRate] = useState(1.0);
+  const [scriptIndustry, setScriptIndustry] = useState('Tech');
   const [scriptGoal, setScriptGoal] = useState('Awareness'); // New: Content goals
   const [captionHashtagCount, setCaptionHashtagCount] = useState(10); // New: Caption density
   const [emojiDensity, setEmojiDensity] = useState('High'); // New: Emoji control
@@ -189,6 +191,8 @@ export default function App() {
               <VoiceControls 
                 key="voice-ctrl" style={voiceStyle} setStyle={setVoiceStyle} 
                 character={voiceCharacter} setCharacter={setVoiceCharacter}
+                pitch={voicePitch} setPitch={setVoicePitch}
+                rate={voiceRate} setRate={setVoiceRate}
               />
             )}
             {activeTab === 'script' && (
@@ -241,7 +245,7 @@ export default function App() {
                     />
                   )}
                   {activeTab === 'video' && <VideoLab userId={user.uid} length={vidLength} />}
-                  {activeTab === 'voice' && <VoiceForge userId={user.uid} style={voiceStyle} character={voiceCharacter} />}
+                  {activeTab === 'voice' && <VoiceForge userId={user.uid} style={voiceStyle} character={voiceCharacter} pitch={voicePitch} rate={voiceRate} />}
                   {activeTab === 'script' && <ScriptStudio userId={user.uid} tone={scriptTone} industry={scriptIndustry} goal={scriptGoal} />}
                   {activeTab === 'captions' && <CaptionForge userId={user.uid} formats={captionFormats} hashtagCount={captionHashtagCount} emojiDensity={emojiDensity} />}
                   {activeTab === 'history' && <History userId={user.uid} />}
@@ -401,9 +405,11 @@ function VideoControls({ length, setLength }: { length: string, setLength: (l: s
   );
 }
 
-function VoiceControls({ style, setStyle, character, setCharacter }: { 
+function VoiceControls({ style, setStyle, character, setCharacter, pitch, setPitch, rate, setRate }: { 
   style: string, setStyle: (s: string) => void, 
   character: string, setCharacter: (c: string) => void,
+  pitch: number, setPitch: (p: number) => void,
+  rate: number, setRate: (r: number) => void,
   key?: string 
 }) {
   const styles = [
@@ -421,22 +427,47 @@ function VoiceControls({ style, setStyle, character, setCharacter }: {
     <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
       <div className="space-y-2">
         <label className="label-caps">Vocal Persona</label>
-        <div className="grid grid-cols-1 gap-2">
+        <div className="grid grid-cols-2 gap-2">
            {characters.map(c => (
              <button 
                key={c.id}
                onClick={() => setCharacter(c.id)}
                className={cn(
-                 "p-3 rounded-xl border text-left flex items-center justify-between transition-all",
+                 "p-2 rounded-xl border text-left flex items-center justify-between transition-all",
                  character === c.id ? "bg-brand-primary/10 border-brand-primary text-white" : "bg-white/5 border-white/10 text-white/40"
                )}
              >
-                <span className="text-xs font-bold uppercase tracking-tight">{c.label}</span>
+                <span className="text-[10px] font-bold uppercase tracking-tight">{c.id}</span>
                 {character === c.id && <Sparkles className="w-3 h-3 text-brand-primary" />}
              </button>
            ))}
         </div>
       </div>
+
+      <div className="space-y-4">
+        <label className="label-caps">Modulation</label>
+        <div className="space-y-3">
+          <div className="flex justify-between items-center">
+            <span className="text-[9px] text-white/40 uppercase font-mono">Pitch</span>
+            <span className="text-[9px] font-mono">{pitch}</span>
+          </div>
+          <input 
+            type="range" min="0.5" max="2" step="0.1" value={pitch} onChange={(e) => setPitch(parseFloat(e.target.value))}
+            className="w-full transition-all accent-brand-primary h-1 bg-white/10 rounded-full appearance-none cursor-pointer"
+          />
+        </div>
+        <div className="space-y-3">
+          <div className="flex justify-between items-center">
+            <span className="text-[9px] text-white/40 uppercase font-mono">Speed</span>
+            <span className="text-[9px] font-mono">{rate}</span>
+          </div>
+          <input 
+            type="range" min="0.5" max="2" step="0.1" value={rate} onChange={(e) => setRate(parseFloat(e.target.value))}
+            className="w-full transition-all accent-brand-primary h-1 bg-white/10 rounded-full appearance-none cursor-pointer"
+          />
+        </div>
+      </div>
+
       <div className="space-y-2">
         <label className="label-caps">Acoustic Style</label>
         <div className="flex flex-col gap-2">
@@ -1126,7 +1157,9 @@ function VideoLab({ userId, length }: { userId: string, length: string }) {
   );
 }
 
-function VoiceForge({ userId, style, character }: { userId: string, style: string, character: string }) {
+function VoiceForge({ userId, style, character, pitch, rate }: { 
+  userId: string, style: string, character: string, pitch: number, rate: number 
+}) {
   const [text, setText] = useState('');
   const [speaking, setSpeaking] = useState(false);
   const [voice, setVoice] = useState<SpeechSynthesisVoice | null>(null);
@@ -1139,32 +1172,51 @@ function VoiceForge({ userId, style, character }: { userId: string, style: strin
     const loadVoices = () => {
       const v = window.speechSynthesis.getVoices();
       setVoices(v);
-      if (v.length > 0 && !voice) setVoice(v[0]);
+      if (v.length > 0 && !voice) {
+        // Try to find a default for Aura
+        const defaultVoice = v.find(v => v.name.includes('Samantha') || v.name.includes('Google UK English Female')) || v[0];
+        setVoice(defaultVoice);
+      }
     };
     loadVoices();
     window.speechSynthesis.onvoiceschanged = loadVoices;
   }, []);
+
+  useEffect(() => {
+    if (voices.length > 0) {
+      const lowerChar = character.toLowerCase();
+      let candidates = voices.filter(v => {
+        if (lowerChar === 'atlas') return v.name.includes('David') || v.name.includes('Alex') || v.name.includes('Daniel') || v.name.includes('Male');
+        if (lowerChar === 'aura' || lowerChar === 'nova') return v.name.includes('Google UK English Female') || v.name.includes('Samantha') || v.name.includes('Zira') || v.name.includes('Female');
+        if (lowerChar === 'echo') return v.name.includes('Whisper') || v.name.includes('Google') || v.name.includes('Natural');
+        return false;
+      });
+      
+      if (candidates.length > 0) {
+        // Nova vs Aura variety
+        if (lowerChar === 'nova' && candidates.length > 1) setVoice(candidates[1]);
+        else setVoice(candidates[0]);
+      }
+    }
+  }, [character, voices]);
 
   const handleSpeak = () => {
     if (!text) return;
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     
-    // Character logic
+    // Character logic modulation
     if (character === 'Clone' && clonedProfile) {
-       utterance.pitch = clonedProfile.pitch;
-       utterance.rate = clonedProfile.rate;
+       utterance.pitch = pitch * clonedProfile.pitch;
+       utterance.rate = rate * clonedProfile.rate;
     } else {
-       // Presets based on character
-       const presetMap: Record<string, { pitch: number, rate: number }> = {
-         'Aura': { pitch: 1.1, rate: 0.9 },
-         'Nova': { pitch: 1.3, rate: 1.2 },
-         'Atlas': { pitch: 0.7, rate: 0.8 },
-         'Echo': { pitch: 2.0, rate: 1.5 }
-       };
-       const config = presetMap[character] || { pitch: 1, rate: 1 };
-       utterance.pitch = config.pitch;
-       utterance.rate = config.rate;
+       utterance.pitch = pitch;
+       utterance.rate = rate;
+       
+       if (style === 'soft') {
+         utterance.rate *= 0.8;
+         utterance.pitch *= 0.9;
+       }
     }
 
     if (voice) utterance.voice = voice;
