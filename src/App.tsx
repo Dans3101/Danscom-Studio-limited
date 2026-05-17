@@ -16,7 +16,9 @@ import {
   Timestamp,
   doc,
   getDoc,
-  setDoc 
+  setDoc,
+  deleteDoc,
+  updateDoc 
 } from 'firebase/firestore';
 import { 
   Image as ImageIcon, 
@@ -36,7 +38,10 @@ import {
   ScrollText,
   Film,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Edit3,
+  List,
+  Save
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Toaster, toast } from 'react-hot-toast';
@@ -76,6 +81,8 @@ export default function App() {
   const [scriptGoal, setScriptGoal] = useState('Awareness'); // New: Content goals
   const [captionHashtagCount, setCaptionHashtagCount] = useState(10); // New: Caption density
   const [emojiDensity, setEmojiDensity] = useState('High'); // New: Emoji control
+  const [voiceProfiles, setVoiceProfiles] = useState<any[]>([]); // New: Saved voice profiles
+  const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
@@ -84,6 +91,20 @@ export default function App() {
     });
     return unsubscribe;
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      const q = query(collection(db, `users/${user.uid}/voiceProfiles`));
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const profiles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setVoiceProfiles(profiles);
+        if (profiles.length > 0 && !activeProfileId) {
+          setActiveProfileId(profiles[0].id);
+        }
+      });
+      return unsubscribe;
+    }
+  }, [user]);
 
   const login = async () => {
     try {
@@ -196,6 +217,10 @@ export default function App() {
                 character={voiceCharacter} setCharacter={setVoiceCharacter}
                 pitch={voicePitch} setPitch={setVoicePitch}
                 rate={voiceRate} setRate={setVoiceRate}
+                profiles={voiceProfiles}
+                activeProfileId={activeProfileId}
+                setActiveProfileId={setActiveProfileId}
+                userId={user?.uid}
               />
             )}
             {activeTab === 'script' && (
@@ -248,7 +273,7 @@ export default function App() {
                     />
                   )}
                   {activeTab === 'video' && <VideoLab userId={user.uid} length={vidLength} />}
-                  {activeTab === 'voice' && <VoiceForge userId={user.uid} style={voiceStyle} character={voiceCharacter} pitch={voicePitch} rate={voiceRate} />}
+                  {activeTab === 'voice' && <VoiceForge userId={user.uid} style={voiceStyle} character={voiceCharacter} pitch={voicePitch} rate={voiceRate} activeProfileId={activeProfileId} profiles={voiceProfiles} />}
                   {activeTab === 'script' && <ScriptStudio userId={user.uid} tone={scriptTone} industry={scriptIndustry} goal={scriptGoal} />}
                   {activeTab === 'captions' && <CaptionForge userId={user.uid} formats={captionFormats} hashtagCount={captionHashtagCount} emojiDensity={emojiDensity} />}
                   {activeTab === 'history' && <History userId={user.uid} />}
@@ -408,43 +433,128 @@ function VideoControls({ length, setLength }: { length: string, setLength: (l: s
   );
 }
 
-function VoiceControls({ style, setStyle, character, setCharacter, pitch, setPitch, rate, setRate }: { 
+function VoiceControls({ 
+  style, setStyle, 
+  character, setCharacter, 
+  pitch, setPitch, 
+  rate, setRate,
+  profiles, activeProfileId, setActiveProfileId, userId
+}: { 
   style: string, setStyle: (s: string) => void, 
   character: string, setCharacter: (c: string) => void,
   pitch: number, setPitch: (p: number) => void,
   rate: number, setRate: (r: number) => void,
+  profiles: any[],
+  activeProfileId: string | null,
+  setActiveProfileId: (id: string) => void,
+  userId: string | undefined,
   key?: string 
 }) {
   const styles = [
     { id: 'dynamic', label: 'High Fidelity' },
     { id: 'soft', label: 'Neural Calm' }
   ];
-  const characters = [
-    { id: 'Aura', label: 'Aura (Smooth)' },
-    { id: 'Nova', label: 'Nova (Energetic)' },
-    { id: 'Atlas', label: 'Atlas (Deep)' },
-    { id: 'Echo', label: 'Echo (Digital)' },
-    { id: 'Clone', label: 'Voice Clone (Active)' }
+  const presets = [
+    { id: 'Aura', label: 'Aura' },
+    { id: 'Nova', label: 'Nova' },
+    { id: 'Atlas', label: 'Atlas' },
+    { id: 'Echo', label: 'Echo' }
   ];
+
+  const handleDelete = async (id: string) => {
+    if (!userId) return;
+    try {
+      await deleteDoc(doc(db, `users/${userId}/voiceProfiles`, id));
+      toast.success('Neural profile purged.');
+    } catch (err) {
+      toast.error('Purge failed');
+    }
+  };
+
+  const handleRename = async (id: string, oldName: string) => {
+    if (!userId) return;
+    const newName = prompt('New neural designation:', oldName || 'My Clone');
+    if (newName && newName !== oldName) {
+      try {
+        await updateDoc(doc(db, `users/${userId}/voiceProfiles`, id), { name: newName });
+        toast.success('Neural designation updated.');
+      } catch (err) {
+        toast.error('Update failed');
+      }
+    }
+  };
+
   return (
     <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
-      <div className="space-y-2">
-        <label className="label-caps">Vocal Persona</label>
-        <div className="grid grid-cols-2 gap-2">
-           {characters.map(c => (
-             <button 
-               key={c.id}
-               onClick={() => setCharacter(c.id)}
-               className={cn(
-                 "p-2 rounded-xl border text-left flex items-center justify-between transition-all",
-                 character === c.id ? "bg-brand-primary/10 border-brand-primary text-white" : "bg-white/5 border-white/10 text-white/40"
-               )}
-             >
-                <span className="text-[10px] font-bold uppercase tracking-tight">{c.id}</span>
-                {character === c.id && <Sparkles className="w-3 h-3 text-brand-primary" />}
-             </button>
-           ))}
+      <div className="space-y-4">
+        <label className="label-caps">Vocal Core</label>
+        
+        <div className="space-y-2">
+          <div className="text-[8px] text-white/30 uppercase tracking-[0.2em] font-bold mb-1">Presets</div>
+          <div className="grid grid-cols-2 gap-2">
+            {presets.map(p => (
+              <button 
+                key={p.id}
+                onClick={() => setCharacter(p.id)}
+                className={cn(
+                  "p-2 rounded-xl border text-left flex items-center justify-between transition-all",
+                  character === p.id ? "bg-brand-primary/10 border-brand-primary text-white" : "bg-white/5 border-white/10 text-white/40"
+                )}
+              >
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold uppercase tracking-tight">{p.label}</span>
+                  <span className="text-[7px] text-white/20 uppercase tracking-widest leading-none mt-1">Preset</span>
+                </div>
+                {character === p.id && <div className="w-1.5 h-1.5 rounded-full bg-brand-primary" />}
+              </button>
+            ))}
+          </div>
         </div>
+
+        {profiles.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex justify-between items-center bg-white/[0.02]">
+              <div className="text-[8px] text-brand-secondary uppercase tracking-[0.2em] font-bold mb-1">Cloned Synapses</div>
+              <span className="text-[8px] text-white/20 font-mono italic">{profiles.length} SAVED</span>
+            </div>
+            <div className="space-y-1">
+              {profiles.map(p => (
+                <div 
+                  key={p.id}
+                  className={cn(
+                    "group flex items-center p-2 rounded-lg border transition-all",
+                    character === 'Clone' && activeProfileId === p.id ? "bg-brand-secondary/10 border-brand-secondary text-white" : "bg-white/5 border-white/10 text-white/40"
+                  )}
+                >
+                  <button 
+                    onClick={() => { setCharacter('Clone'); setActiveProfileId(p.id); }}
+                    className="flex-1 text-left flex flex-col"
+                  >
+                    <span className="text-[10px] font-bold uppercase tracking-tight truncate w-32">{p.name || 'Anonymous Clone'}</span>
+                    <span className="text-[7px] text-brand-secondary/40 font-mono">PITCH: {p.pitch.toFixed(1)}x</span>
+                  </button>
+                  
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => handleRename(p.id, p.name)} className="p-1.5 hover:text-white transition-colors"><Edit3 className="w-3 h-3" /></button>
+                    <button onClick={() => handleDelete(p.id)} className="p-1.5 hover:text-red-500 transition-colors"><Trash2 className="w-3 h-3" /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <button 
+          onClick={() => setCharacter('Clone')}
+          className={cn(
+            "w-full p-2.5 rounded-xl border flex items-center justify-center gap-2 transition-all",
+            character === 'Clone' && !activeProfileId ? "bg-brand-primary/10 border-brand-primary text-white" : "bg-white/2 border-white/5 text-white/20 hover:bg-white/5"
+          )}
+        >
+          <Mic className="w-3 h-3" />
+          <span className="text-[10px] font-bold uppercase tracking-widest">Active Neural Link</span>
+          {character === 'Clone' && <Sparkles className="w-3 h-3 text-brand-primary" />}
+        </button>
       </div>
 
       <div className="space-y-4">
@@ -1160,8 +1270,10 @@ function VideoLab({ userId, length }: { userId: string, length: string }) {
   );
 }
 
-function VoiceForge({ userId, style, character, pitch, rate }: { 
-  userId: string, style: string, character: string, pitch: number, rate: number 
+function VoiceForge({ userId, style, character, pitch, rate, activeProfileId, profiles }: { 
+  userId: string, style: string, character: string, pitch: number, rate: number,
+  activeProfileId: string | null,
+  profiles: any[]
 }) {
   const [text, setText] = useState('');
   const [speaking, setSpeaking] = useState(false);
@@ -1169,24 +1281,8 @@ function VoiceForge({ userId, style, character, pitch, rate }: {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [isRecording, setIsRecording] = useState(false);
   const [isCloning, setIsCloning] = useState(false);
-  const [clonedProfile, setClonedProfile] = useState<{ pitch: number, rate: number } | null>(null);
 
-  // Load existing profile from Firestore
-  useEffect(() => {
-    const loadProfile = async () => {
-      if (!userId) return;
-      try {
-        const docRef = doc(db, `users/${userId}/voiceProfiles`, 'current');
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setClonedProfile(docSnap.data() as { pitch: number, rate: number });
-        }
-      } catch (err) {
-        console.error("Error loading voice profile:", err);
-      }
-    };
-    loadProfile();
-  }, [userId]);
+  const activeProfile = profiles.find(p => p.id === activeProfileId);
 
   useEffect(() => {
     const loadVoices = () => {
@@ -1226,9 +1322,9 @@ function VoiceForge({ userId, style, character, pitch, rate }: {
     const utterance = new SpeechSynthesisUtterance(text);
     
     // Character logic modulation
-    if (character === 'Clone' && clonedProfile) {
-       utterance.pitch = pitch * clonedProfile.pitch;
-       utterance.rate = rate * clonedProfile.rate;
+    if (character === 'Clone' && activeProfile) {
+       utterance.pitch = pitch * activeProfile.pitch;
+       utterance.rate = rate * activeProfile.rate;
     } else {
        utterance.pitch = pitch;
        utterance.rate = rate;
@@ -1243,7 +1339,7 @@ function VoiceForge({ userId, style, character, pitch, rate }: {
     utterance.onstart = () => setSpeaking(true);
     utterance.onend = () => setSpeaking(false);
     window.speechSynthesis.speak(utterance);
-    toast.success(`${character} manifestation active`);
+    toast.success(`${character === 'Clone' ? activeProfile?.name || 'Clone' : character} manifestation active`);
   };
 
   const startCloning = async () => {
@@ -1288,19 +1384,16 @@ function VoiceForge({ userId, style, character, pitch, rate }: {
         setIsCloning(true);
         toast.loading('Analyzing cognitive acoustics...');
         
-        // Basic analysis: Average frequency to pitch mapping
-        // Human speech avg frequency: 85-255 Hz
-        // Higher freq -> higher pitch factor
         const avgFreq = frequencies.length > 0 ? frequencies.reduce((a, b) => a + b, 0) / frequencies.length : 150;
-        
-        // Map 80Hz -> 0.6, 300Hz -> 1.4
         const normalizedPitch = Math.max(0.5, Math.min(2.0, (avgFreq - 80) / 150 + 0.6));
-        const profile = { pitch: normalizedPitch, rate: 1.0 };
+        
+        const name = prompt('Name this neural identity:', `Voice Clone ${profiles.length + 1}`) || `Clone ${Date.now()}`;
+        const profile = { name, pitch: normalizedPitch, rate: 1.0, createdAt: Timestamp.now() };
 
         try {
-          await setDoc(doc(db, `users/${userId}/voiceProfiles`, 'current'), profile);
-          setClonedProfile(profile);
-          toast.success(`Voice Profile Synchronized: ${avgFreq.toFixed(0)}Hz detected.`);
+          const docId = crypto.randomUUID();
+          await setDoc(doc(db, `users/${userId}/voiceProfiles`, docId), profile);
+          toast.success(`Voice Profile Synchronized: ${name}`);
         } catch (err) {
           toast.error("Failed to sync neural profile to vault.");
         } finally {
@@ -1340,7 +1433,7 @@ function VoiceForge({ userId, style, character, pitch, rate }: {
              ) : (
                <Mic className={cn("w-12 h-12 transition-colors", speaking ? "text-brand-primary animate-pulse" : isRecording ? "text-red-500 animate-bounce" : "text-white/10")} />
              )}
-             {clonedProfile && (
+             {activeProfile && (
                <div className="absolute -bottom-2 -right-2 w-6 h-6 bg-brand-secondary rounded-full border border-black flex items-center justify-center shadow-lg">
                  <Zap className="w-3 h-3 text-black" />
                </div>
@@ -1352,10 +1445,10 @@ function VoiceForge({ userId, style, character, pitch, rate }: {
                {speaking ? 'Modulating Waveforms...' : 
                 isRecording ? 'Capturing Voice Signature...' : 
                 isCloning ? 'Neural Pattern Matching...' :
-                clonedProfile ? 'Clone Loaded & Ready' :
+                activeProfile ? `Profile Active: ${activeProfile.name}` :
                 'Neural Voice Idle'}
              </p>
-             {character === 'Clone' && !clonedProfile && !isRecording && !isCloning && (
+             {character === 'Clone' && !activeProfile && !isRecording && !isCloning && (
                <p className="text-[10px] text-brand-primary font-bold uppercase tracking-widest animate-pulse">Neural Identity Missing</p>
              )}
            </div>
@@ -1372,12 +1465,12 @@ function VoiceForge({ userId, style, character, pitch, rate }: {
                 className="text-[9px] uppercase font-bold text-brand-secondary hover:brightness-125 transition-all flex items-center gap-2"
               >
                 <div className="w-1.5 h-1.5 rounded-full bg-brand-secondary animate-pulse" />
-                {clonedProfile ? 'Re-Clone Voice' : 'Clone My Voice'}
+                {activeProfile ? 'New Profile' : 'Clone My Voice'}
               </button>
             )}
         </div>
         <textarea 
-          placeholder={character === 'Clone' && !clonedProfile ? "Please clone your voice above first..." : "Words to be manifested into reality..."}
+          placeholder={character === 'Clone' && !activeProfile ? "Please clone your voice above first..." : "Words to be manifested into reality..."}
           className="w-full min-h-[100px] bg-white/5 border border-white/10 rounded-xl p-4 text-sm focus:outline-none focus:border-brand-primary/50 resize-none font-medium placeholder:text-white/20 transition-all shadow-inner"
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -1389,13 +1482,14 @@ function VoiceForge({ userId, style, character, pitch, rate }: {
               className="w-full bg-[#111] border border-white/10 rounded-xl p-3 text-xs font-medium focus:outline-none text-white/80"
               onChange={(e) => setVoice(voices.find(v => v.name === e.target.value) || null)}
             >
+              <option value="">Default Neural Link</option>
               {voices.map((v, i) => (
                 <option key={`${v.name}-${v.lang}-${i}`} value={v.name}>{v.name}</option>
               ))}
             </select>
           </div>
           <button 
-            disabled={speaking || !text || (character === 'Clone' && !clonedProfile)}
+            disabled={speaking || !text || (character === 'Clone' && !activeProfile)}
             onClick={handleSpeak}
             className="neon-button disabled:opacity-30 h-[48px] mt-auto min-w-[200px] tracking-widest uppercase text-xs"
           >

@@ -12,7 +12,8 @@ export const enhancePrompt = async (req: Request, res: Response) => {
     if (!API_KEY) {
       try {
         const systemPrompt = "You are an expert AI art prompt engineer. Enhance the user prompt for high quality images. Return only the enhanced text.";
-        const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}?system=${encodeURIComponent(systemPrompt)}`);
+        const fullPrompt = `${systemPrompt}\n\nUser Prompt: ${prompt}`;
+        const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(fullPrompt)}?model=openai`);
         const enhanced = await response.text();
         return res.json({ 
           enhanced: enhanced || `${prompt} (Static Enhancement)`,
@@ -47,8 +48,8 @@ export const generateScript = async (req: Request, res: Response) => {
     const API_KEY = process.env.GEMINI_API_KEY;
     if (!API_KEY) {
       try {
-        const scriptPrompt = `Write a ${tone || 'viral'} high-energy ${platform} script for the ${industry || 'General'} industry. Goal: ${goal}. Topic: ${topic}. Include hook, scenes, and CTA. Tone: ${tone}.`;
-        const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(scriptPrompt)}`);
+        const scriptPrompt = `Write a ${tone || 'viral'} high-energy ${platform} script for the ${industry || 'General'} industry. Goal: ${goal}. Topic: ${topic}. Include hook, scenes, and CTA. Tone: ${tone}. Use markdown-like formatting with scenes labeled.`;
+        const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(scriptPrompt)}?model=openai`);
         const script = await response.text();
         return res.json({ 
           script: script || "[Failed to manifest script]",
@@ -94,8 +95,8 @@ export const generateCaptions = async (req: Request, res: Response) => {
     const API_KEY = process.env.GEMINI_API_KEY;
     if (!API_KEY) {
       try {
-        const captionPrompt = `Generate catchy social media captions for: ${context}. Formats: ${formats?.join(', ') || 'Standard'}. Hashtags: ${hashtagCount}. Emoji: ${emojiDensity}.`;
-        const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(captionPrompt)}`);
+        const captionPrompt = `Generate 3 catchy social media captions for: ${context}. Formats: ${formats?.join(', ') || 'Standard'}. Hashtag count: ${hashtagCount}. Emoji priority: ${emojiDensity}. Return only the captions.`;
+        const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(captionPrompt)}?model=openai`);
         const captions = await response.text();
         return res.json({ 
           captions: captions || "[Failed to forge captions]",
