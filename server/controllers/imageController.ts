@@ -9,36 +9,41 @@ export const generateImage = async (req: Request, res: Response) => {
 
     const modelMap: Record<string, string> = {
         'SDV 1.5': 'runwayml/stable-diffusion-v1-5',
-        'SDXL BASE': 'stabilityai/stable-diffusion-xl-base-1.0'
+        'SDXL BASE': 'stabilityai/stable-diffusion-xl-base-1.0',
+        'Flux': 'flux',
+        'Flux Realism': 'flux-realism',
+        'Flux Anime': 'flux-anime',
+        'Flux 3D': 'flux-3d',
+        'Turbo': 'turbo'
     };
 
-    const modelId = modelMap[model] || 'runwayml/stable-diffusion-v1-5';
-
     const HF_API_KEY = process.env.HUGGINGFACE_API_KEY;
+    const modelToUse = model || 'Flux';
+    const isPollinationsModel = ['Flux', 'Flux Realism', 'Flux Anime', 'Flux 3D', 'Turbo'].includes(modelToUse);
     
-    // Fallback to Pollinations.ai if HF is missing or explicitly for free tier seekers
-    const usePollinations = !HF_API_KEY;
-
-    if (usePollinations) {
+    // 1. POLLINATIONS (Fast & Free) - Default or specifically chosen
+    if (isPollinationsModel || !HF_API_KEY) {
       try {
-        // Pollinations.ai is a fantastic free resource that needs no key
         const seed = Math.floor(Math.random() * 1000000);
         const encodedPrompt = encodeURIComponent(prompt);
-        const imageUrl = `https://pollinations.ai/p/${encodedPrompt}?width=1024&height=1024&seed=${seed}&nologo=true`;
+        const pollinationsModel = modelMap[modelToUse] || 'flux';
+        const imageUrl = `https://pollinations.ai/p/${encodedPrompt}?width=1024&height=1024&seed=${seed}&model=${pollinationsModel}&nologo=true`;
         
-        // We return immediately for the free tier experience
         return res.json({ 
           imageUrl, 
-          message: "Neural synthesis powered by Pollinations (Free Tier). Add HUGGINGFACE_API_KEY for custom models." 
+          message: HF_API_KEY ? `Synergizing via Pollinations ${modelToUse} Core.` : "Neural synthesis powered by Pollinations (Free Tier). Add HUGGINGFACE_API_KEY for HuggingFace specific models." 
         });
       } catch (err) {
-        console.error("Pollinations fallback failed:", err);
+        console.error("Pollinations failed:", err);
+        if (!HF_API_KEY) return res.status(500).json({ error: "All neural cores offline." });
       }
     }
 
+    const hfModelId = modelMap[modelToUse] || 'runwayml/stable-diffusion-v1-5';
+
     try {
       const response = await fetch(
-        `https://api-inference.huggingface.co/models/${modelId}`,
+        `https://api-inference.huggingface.co/models/${hfModelId}`,
         {
           headers: { 
             Authorization: `Bearer ${HF_API_KEY}`,

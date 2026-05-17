@@ -61,7 +61,7 @@ export default function App() {
   // Shared state for controls
   const [scriptTone, setScriptTone] = useState('Viral');
   const [captionFormats, setCaptionFormats] = useState(['reels', 'long']);
-  const [imgModel, setImgModel] = useState('SDV 1.5');
+  const [imgModel, setImgModel] = useState('Flux');
   const [imgGuidance, setImgGuidance] = useState(7.5);
   const [imgSteps, setImgSteps] = useState(50);
   const [vidLength, setVidLength] = useState('2S');
@@ -332,16 +332,16 @@ function ImageControls({ model, setModel, guidance, setGuidance, steps, setSteps
       <div className="space-y-2">
         <label className="label-caps">Neural Model</label>
         <div className="grid grid-cols-2 gap-2">
-          {['SDV 1.5', 'SDXL BASE'].map(m => (
+          {['Flux', 'Flux Realism', 'Flux Anime', 'Flux 3D', 'Turbo', 'SDV 1.5', 'SDXL BASE'].map(m => (
             <button 
               key={m}
               onClick={() => setModel(m)}
               className={cn(
-                "p-2 rounded-lg border text-[10px] uppercase font-bold tracking-wider",
+                "p-2 rounded-lg border text-[9px] uppercase font-bold tracking-wider transition-all",
                 model === m ? "border-brand-primary bg-brand-primary/10 text-brand-primary" : "border-white/10 bg-white/5 text-white/40"
               )}
             >
-              {m}
+              {['Flux', 'Flux Realism', 'Flux Anime', 'Flux 3D', 'Turbo'].includes(m) ? `${m} (Free)` : m}
             </button>
           ))}
         </div>
