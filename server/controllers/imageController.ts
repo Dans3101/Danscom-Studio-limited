@@ -15,19 +15,25 @@ export const generateImage = async (req: Request, res: Response) => {
     const modelId = modelMap[model] || 'runwayml/stable-diffusion-v1-5';
 
     const HF_API_KEY = process.env.HUGGINGFACE_API_KEY;
-    if (!HF_API_KEY) {
-      // Falling back to a high-quality placeholder for demo purposes
-      const demoImages = [
-        "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=1000&auto=format&fit=crop",
-        "https://images.unsplash.com/photo-1614850523296-62058525b6a7?q=80&w=1000&auto=format&fit=crop",
-        "https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?q=80&w=1000&auto=format&fit=crop",
-        "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000&auto=format&fit=crop"
-      ];
-      const imageUrl = demoImages[Math.floor(Math.random() * demoImages.length)];
-      return res.json({ 
-        imageUrl, 
-        message: "Simulation Mode active. Add HUGGINGFACE_API_KEY in Settings for live synthesis." 
-      });
+    
+    // Fallback to Pollinations.ai if HF is missing or explicitly for free tier seekers
+    const usePollinations = !HF_API_KEY;
+
+    if (usePollinations) {
+      try {
+        // Pollinations.ai is a fantastic free resource that needs no key
+        const seed = Math.floor(Math.random() * 1000000);
+        const encodedPrompt = encodeURIComponent(prompt);
+        const imageUrl = `https://pollinations.ai/p/${encodedPrompt}?width=1024&height=1024&seed=${seed}&nologo=true`;
+        
+        // We return immediately for the free tier experience
+        return res.json({ 
+          imageUrl, 
+          message: "Neural synthesis powered by Pollinations (Free Tier). Add HUGGINGFACE_API_KEY for custom models." 
+        });
+      } catch (err) {
+        console.error("Pollinations fallback failed:", err);
+      }
     }
 
     try {
@@ -55,17 +61,14 @@ export const generateImage = async (req: Request, res: Response) => {
         const errorText = await response.text();
         console.error("HuggingFace API Error Response:", errorText);
         
-        // Handle JSON error vs HTML error
-        try {
-            const errorJson = JSON.parse(errorText);
-            return res.status(response.status).json({ 
-                error: errorJson.error || `AI Nexus rejected request (${response.status})`
-            });
-        } catch {
-            return res.status(response.status).json({ 
-                error: "HuggingFace endpoint is unavailable or overloaded. Please try again in a few seconds."
-            });
-        }
+        // On HF failure, try Pollinations as a last resort before erroring
+        const seed = Math.floor(Math.random() * 1000000);
+        const imageUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=1024&height=1024&seed=${seed}&nologo=true`;
+        
+        return res.json({ 
+            imageUrl, 
+            message: "HuggingFace is congested. Diverting to Pollinations Neural Core." 
+        });
       }
 
       const buffer = await response.arrayBuffer();
