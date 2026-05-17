@@ -12,6 +12,9 @@ async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
 
+  // We are behind a proxy in the Cloud Run / Nginx environment
+  app.set('trust proxy', 1);
+
   // Rate Limiting
   const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
