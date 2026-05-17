@@ -627,10 +627,12 @@ function ScriptStudio({ userId, tone, industry, goal }: { userId: string, tone: 
   const [platform, setPlatform] = useState('YouTube');
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState('');
+  const [message, setMessage] = useState<string | null>(null);
 
   const handleGenerate = async () => {
     if (!topic) return;
     setGenerating(true);
+    setMessage(null);
     try {
       const res = await fetch('/api/generate-script', {
         method: 'POST',
@@ -640,7 +642,8 @@ function ScriptStudio({ userId, tone, industry, goal }: { userId: string, tone: 
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setResult(data.script);
-      toast.success('Script drafted.');
+      setMessage(data.message);
+      toast.success(data.message ? 'Demo script manifested.' : 'Script drafted.');
     } catch (e: any) {
       toast.error(e.message || 'Generation failed');
     } finally {
@@ -651,19 +654,25 @@ function ScriptStudio({ userId, tone, industry, goal }: { userId: string, tone: 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 flex flex-col gap-6 h-full">
       <div className="flex-1 glass-panel border-white/5 flex flex-col bg-black/40 overflow-hidden">
-        <div className="p-4 border-b border-white/5 flex justify-between items-center">
-          <span className="label-caps">Output Console</span>
-          {result && (
-            <button 
-              onClick={() => {
-                navigator.clipboard.writeText(result);
-                toast.success('Copied to clipboard');
-              }}
-              className="text-[10px] uppercase text-brand-primary font-bold"
-            >
-              Copy Script
-            </button>
-          )}
+        <div className="p-4 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
+          <div className="flex items-center gap-2">
+            <ScrollText className="w-4 h-4 text-brand-primary" />
+            <span className="label-caps">Output Console</span>
+          </div>
+          <div className="flex items-center gap-4">
+            {message && <span className="text-[9px] text-amber-500 font-mono italic animate-pulse hidden sm:block">{message}</span>}
+            {result && (
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(result);
+                  toast.success('Copied to clipboard');
+                }}
+                className="text-[10px] uppercase text-brand-primary font-bold"
+              >
+                Copy Script
+              </button>
+            )}
+          </div>
         </div>
         <div className="flex-1 p-6 overflow-y-auto font-mono text-sm leading-relaxed whitespace-pre-wrap text-white/80">
           {result || (
@@ -717,10 +726,12 @@ function CaptionForge({ userId, formats, hashtagCount, emojiDensity }: {
   const [context, setContext] = useState('');
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState('');
+  const [message, setMessage] = useState<string | null>(null);
 
   const handleGenerate = async () => {
     if (!context) return;
     setGenerating(true);
+    setMessage(null);
     try {
       const res = await fetch('/api/generate-captions', {
         method: 'POST',
@@ -730,7 +741,8 @@ function CaptionForge({ userId, formats, hashtagCount, emojiDensity }: {
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setResult(data.captions);
-      toast.success('Captions forged.');
+      setMessage(data.message);
+      toast.success(data.message ? 'Demo captions manifested.' : 'Captions forged.');
     } catch (e: any) {
       toast.error(e.message || 'Forging failed');
     } finally {
@@ -746,20 +758,23 @@ function CaptionForge({ userId, formats, hashtagCount, emojiDensity }: {
         </div>
         <div className="p-4 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-brand-secondary animate-pulse" />
-            <span className="label-caps">Manifested Captions</span>
+            <div className={cn("w-2 h-2 rounded-full transition-all", message ? "bg-amber-500 animate-pulse" : "bg-brand-secondary")} />
+            <span className="label-caps">{message ? 'Simulation: Captions' : 'Manifested Captions'}</span>
           </div>
-          {result && (
-            <button 
-              onClick={() => {
-                navigator.clipboard.writeText(result);
-                toast.success('Captions copied.');
-              }}
-              className="text-[10px] uppercase text-brand-secondary font-bold hover:brightness-125 transition-all flex items-center gap-1.5"
-            >
-              <Copy className="w-3 h-3" /> Copy Output
-            </button>
-          )}
+          <div className="flex items-center gap-4">
+            {message && <span className="text-[9px] text-amber-500 font-mono italic hidden sm:block">{message}</span>}
+            {result && (
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(result);
+                  toast.success('Captions copied.');
+                }}
+                className="text-[10px] uppercase text-brand-secondary font-bold hover:brightness-125 transition-all flex items-center gap-1.5"
+              >
+                <Copy className="w-3 h-3" /> Copy Output
+              </button>
+            )}
+          </div>
         </div>
         <div className="flex-1 p-6 md:p-8 overflow-y-auto font-mono text-[11px] leading-loose whitespace-pre-wrap text-white/80 custom-scrollbar">
           {result ? (
@@ -799,11 +814,13 @@ function ImageStudio({ userId, model, guidance, steps }: {
   const [prompt, setPrompt] = useState('');
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
 
   const handleGenerate = async () => {
     if (!prompt) return;
     setGenerating(true);
     setResult(null);
+    setMessage(null);
     try {
       const res = await fetch('/api/generate-image', {
         method: 'POST',
@@ -818,6 +835,7 @@ function ImageStudio({ userId, model, guidance, steps }: {
 
       const data = await res.json();
       setResult(data.imageUrl);
+      setMessage(data.message);
       
       import('canvas-confetti').then(confetti => {
         confetti.default({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#7000FF', '#00D1FF'] });
@@ -834,7 +852,7 @@ function ImageStudio({ userId, model, guidance, steps }: {
         model
       });
 
-      toast.success('Asset manifested.');
+      toast.success(data.message ? 'Demo asset manifested.' : 'Asset manifested.');
     } catch (e: any) {
       toast.error(e.message);
     } finally {
@@ -850,11 +868,17 @@ function ImageStudio({ userId, model, guidance, steps }: {
     >
       <div className="flex-1 relative rounded-2xl overflow-hidden border border-white/10 bg-black/40 group shadow-2xl min-h-[300px]">
         {/* Status indicator */}
-        <div className="absolute top-4 left-4 z-20">
-           <div className="px-2 py-0.5 rounded-md bg-brand-primary/10 border border-brand-primary/20 flex items-center gap-1.5 backdrop-blur-md">
-              <div className="w-1.5 h-1.5 rounded-full bg-brand-primary animate-pulse" />
-              <span className="text-[9px] text-brand-primary font-bold uppercase tracking-widest">Active Synthesis</span>
+        <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
+           <div className={cn(
+             "px-2 py-0.5 rounded-md border flex items-center gap-1.5 backdrop-blur-md transition-all",
+             message ? "bg-amber-500/10 border-amber-500/20" : "bg-brand-primary/10 border-brand-primary/20"
+           )}>
+              <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse", message ? "bg-amber-500" : "bg-brand-primary")} />
+              <span className={cn("text-[9px] font-bold uppercase tracking-widest", message ? "text-amber-500" : "text-brand-primary")}>
+                {message ? 'Neural Preview' : 'Active Synthesis'}
+              </span>
            </div>
+           {message && <span className="text-[8px] text-white/40 font-mono italic hidden lg:block">{message}</span>}
         </div>
 
         <div className="absolute inset-0 p-4 md:p-8 flex flex-col">

@@ -16,7 +16,18 @@ export const generateImage = async (req: Request, res: Response) => {
 
     const HF_API_KEY = process.env.HUGGINGFACE_API_KEY;
     if (!HF_API_KEY) {
-      return res.status(500).json({ error: "HUGGINGFACE_API_KEY not configured" });
+      // Falling back to a high-quality placeholder for demo purposes
+      const demoImages = [
+        "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=1000&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1614850523296-62058525b6a7?q=80&w=1000&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?q=80&w=1000&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000&auto=format&fit=crop"
+      ];
+      const imageUrl = demoImages[Math.floor(Math.random() * demoImages.length)];
+      return res.json({ 
+        imageUrl, 
+        message: "Simulation Mode active. Add HUGGINGFACE_API_KEY in Settings for live synthesis." 
+      });
     }
 
     try {

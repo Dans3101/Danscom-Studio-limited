@@ -10,7 +10,10 @@ export const enhancePrompt = async (req: Request, res: Response) => {
 
     const API_KEY = process.env.GEMINI_API_KEY;
     if (!API_KEY) {
-      return res.status(500).json({ error: "GEMINI_API_KEY not configured" });
+      return res.json({ 
+        enhanced: `${prompt} (Demo Enhanced: Added cinematic lighting, ultra-detailed, 8k, professional photography style)`,
+        message: "Simulation active. GEMINI_API_KEY missing."
+      });
     }
 
     try {
@@ -32,7 +35,28 @@ export const enhancePrompt = async (req: Request, res: Response) => {
 export const generateScript = async (req: Request, res: Response) => {
     const { topic, platform, tone, industry, goal } = req.body;
     const API_KEY = process.env.GEMINI_API_KEY;
-    if (!API_KEY) return res.status(500).json({ error: "GEMINI_API_KEY not configured" });
+    if (!API_KEY) {
+      return res.json({ 
+        script: `[DEMO MODE: SCRIPT SYNTHESIS]
+Title: ${topic} - A Global Perspective
+Industry: ${industry} | Goal: ${goal} | Tone: ${tone}
+
+[SCENE 1: THE HOOK]
+Visual: High-speed montage of ${industry} innovation.
+Audio: "Have you ever wondered how ${topic} is changing the world? Stick around because we're diving deep into the future of ${industry}."
+
+[SCENE 2: THE CORE]
+Visual: Animated infographics showing the growth of ${topic}.
+Audio: "${topic} isn't just a trend. It's a fundamental shift in how we approach ${industry}. Here's why..."
+
+[SCENE 3: THE CALL TO ACTION]
+Visual: Up-close shot of the creator.
+Audio: "Ready to join the revolution? Hit like and subscribe for more ${industry} insights."
+
+(Add GEMINI_API_KEY in Settings to enable real AI generation)`,
+        message: "Simulation active. GEMINI_API_KEY missing." 
+      });
+    }
 
     try {
       const genAI = new GoogleGenerativeAI(API_KEY);
@@ -57,7 +81,21 @@ export const generateScript = async (req: Request, res: Response) => {
 export const generateCaptions = async (req: Request, res: Response) => {
     const { context, formats, hashtagCount, emojiDensity } = req.body;
     const API_KEY = process.env.GEMINI_API_KEY;
-    if (!API_KEY) return res.status(500).json({ error: "GEMINI_API_KEY not configured" });
+    if (!API_KEY) {
+      return res.json({ 
+        captions: `✨ [DEMO MODE: CAPTION FORGE] ✨
+
+🚀 Ready to level up your ${context?.slice(0, 20)}...? 
+The future of content is here and it's powered by neural architecture! 🧠💻
+
+Check out the latest from the forge. 🛠️⚡
+
+#AI #TechInnovation #FutureReady #ContentCreator #DanscomAI
+
+(Add GEMINI_API_KEY in Settings for real AI generation)`,
+        message: "Simulation active. GEMINI_API_KEY missing." 
+      });
+    }
 
     try {
       const genAI = new GoogleGenerativeAI(API_KEY);
