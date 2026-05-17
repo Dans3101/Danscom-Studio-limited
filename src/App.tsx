@@ -963,6 +963,8 @@ function VideoLab({ userId, length }: { userId: string, length: string }) {
   const [result, setResult] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [audioMode, setAudioMode] = useState<'auto' | 'custom'>('auto');
+  const [audioScript, setAudioScript] = useState('');
 
   const handleGenerate = async () => {
     if (!prompt && !imageFile) return;
@@ -972,7 +974,13 @@ function VideoLab({ userId, length }: { userId: string, length: string }) {
       const res = await fetch('/api/generate-video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, hasImage: !!imageFile, length }),
+        body: JSON.stringify({ 
+          prompt, 
+          hasImage: !!imageFile, 
+          length,
+          audioMode,
+          audioScript: audioMode === 'custom' ? audioScript : undefined
+        }),
       });
 
       if (!res.ok) {
@@ -1058,13 +1066,54 @@ function VideoLab({ userId, length }: { userId: string, length: string }) {
       </div>
 
       <div className="shrink-0 glass-panel p-4 md:p-6 space-y-4 bg-white/[0.02]">
-        <label className="label-caps">Motion Script</label>
-        <textarea 
-          placeholder="E.g. A sunset over the ocean with gentle waves..."
-          className="w-full min-h-[80px] bg-white/5 border border-white/10 rounded-xl p-4 text-sm focus:outline-none focus:border-brand-primary/50 resize-none font-medium placeholder:text-white/20"
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-        />
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <label className="label-caps">Motion Script</label>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setAudioMode('auto')}
+                className={cn(
+                  "px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest transition-all border",
+                  audioMode === 'auto' ? "bg-brand-primary/20 border-brand-primary text-brand-primary" : "bg-white/5 border-white/10 text-white/40"
+                )}
+              >
+                Auto Audio
+              </button>
+              <button 
+                onClick={() => setAudioMode('custom')}
+                className={cn(
+                  "px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest transition-all border",
+                  audioMode === 'custom' ? "bg-brand-secondary/20 border-brand-secondary text-brand-secondary" : "bg-white/5 border-white/10 text-white/40"
+                )}
+              >
+                Custom Script
+              </button>
+            </div>
+          </div>
+          <textarea 
+            placeholder="E.g. A sunset over the ocean with gentle waves..."
+            className="w-full min-h-[80px] bg-white/5 border border-white/10 rounded-xl p-4 text-sm focus:outline-none focus:border-brand-primary/50 resize-none font-medium placeholder:text-white/20"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+          />
+        </div>
+
+        {audioMode === 'custom' && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            className="space-y-2"
+          >
+            <label className="label-caps text-brand-secondary">Audio Script / TTS</label>
+            <textarea 
+              placeholder="Enter words for the AI to speak over your video..."
+              className="w-full min-h-[60px] bg-white/5 border border-brand-secondary/30 rounded-xl p-4 text-xs focus:outline-none focus:border-brand-secondary/50 resize-none font-medium placeholder:text-white/20"
+              value={audioScript}
+              onChange={(e) => setAudioScript(e.target.value)}
+            />
+          </motion.div>
+        )}
+
         <button 
           disabled={generating || (!prompt && !imageFile)}
           onClick={handleGenerate}
