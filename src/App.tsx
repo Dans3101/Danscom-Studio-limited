@@ -13,7 +13,10 @@ import {
   where, 
   orderBy, 
   onSnapshot,
-  Timestamp 
+  Timestamp,
+  doc,
+  getDoc,
+  setDoc 
 } from 'firebase/firestore';
 import { 
   Image as ImageIcon, 
@@ -1168,6 +1171,23 @@ function VoiceForge({ userId, style, character, pitch, rate }: {
   const [isCloning, setIsCloning] = useState(false);
   const [clonedProfile, setClonedProfile] = useState<{ pitch: number, rate: number } | null>(null);
 
+  // Load existing profile from Firestore
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (!userId) return;
+      try {
+        const docRef = doc(db, `users/${userId}/voiceProfiles`, 'current');
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          setClonedProfile(docSnap.data() as { pitch: number, rate: number });
+        }
+      } catch (err) {
+        console.error("Error loading voice profile:", err);
+      }
+    };
+    loadProfile();
+  }, [userId]);
+
   useEffect(() => {
     const loadVoices = () => {
       const v = window.speechSynthesis.getVoices();
@@ -1227,21 +1247,78 @@ function VoiceForge({ userId, style, character, pitch, rate }: {
   };
 
   const startCloning = async () => {
-    setIsRecording(true);
-    toast('Recording sample... Speak for 3 seconds.', { icon: '🎙️' });
-    
-    // Simulated cloning logic
-    setTimeout(() => {
-      setIsRecording(false);
-      setIsCloning(true);
-      toast.loading('Analyzing neural harmonics...');
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      setIsRecording(true);
+      toast('Recording voice signature... Please speak normally.', { icon: '🎙️' });
       
+      const mediaRecorder = new MediaRecorder(stream);
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const analyser = audioContext.createAnalyser();
+      const source = audioContext.createMediaStreamSource(stream);
+      source.connect(analyser);
+      
+      analyser.fftSize = 2048;
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      
+      let frequencies: number[] = [];
+      const captureInterval = setInterval(() => {
+        analyser.getByteFrequencyData(dataArray);
+        // Find peak frequency
+        let maxVal = -1;
+        let maxIndex = -1;
+        for (let i = 0; i < bufferLength; i++) {
+          if (dataArray[i] > maxVal) {
+            maxVal = dataArray[i];
+            maxIndex = i;
+          }
+        }
+        if (maxVal > 50) { // Threshold
+          const freq = maxIndex * audioContext.sampleRate / analyser.fftSize;
+          frequencies.push(freq);
+        }
+      }, 100);
+
+      const chunks: Blob[] = [];
+      mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+      mediaRecorder.onstop = async () => {
+        clearInterval(captureInterval);
+        setIsRecording(false);
+        setIsCloning(true);
+        toast.loading('Analyzing cognitive acoustics...');
+        
+        // Basic analysis: Average frequency to pitch mapping
+        // Human speech avg frequency: 85-255 Hz
+        // Higher freq -> higher pitch factor
+        const avgFreq = frequencies.length > 0 ? frequencies.reduce((a, b) => a + b, 0) / frequencies.length : 150;
+        
+        // Map 80Hz -> 0.6, 300Hz -> 1.4
+        const normalizedPitch = Math.max(0.5, Math.min(2.0, (avgFreq - 80) / 150 + 0.6));
+        const profile = { pitch: normalizedPitch, rate: 1.0 };
+
+        try {
+          await setDoc(doc(db, `users/${userId}/voiceProfiles`, 'current'), profile);
+          setClonedProfile(profile);
+          toast.success(`Voice Profile Synchronized: ${avgFreq.toFixed(0)}Hz detected.`);
+        } catch (err) {
+          toast.error("Failed to sync neural profile to vault.");
+        } finally {
+          setIsCloning(false);
+          stream.getTracks().forEach(track => track.stop());
+          audioContext.close();
+        }
+      };
+
+      mediaRecorder.start();
       setTimeout(() => {
-        setIsCloning(false);
-        setClonedProfile({ pitch: 0.8 + Math.random() * 0.4, rate: 0.9 + Math.random() * 0.2 });
-        toast.success('Voice Clone Successful. Neural profile matched.');
-      }, 3000);
-    }, 3000);
+        if (mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+      }, 5000);
+
+    } catch (err: any) {
+      toast.error("Microphone access required for neural cloning.");
+      console.error(err);
+    }
   };
 
   return (

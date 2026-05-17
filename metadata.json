@@ -1,6 +1,6 @@
 {
   "name": "Danscom AI Studio",
   "description": "A production-ready AI content generation platform for images, video, and voice.",
-  "requestFramePermissions": [],
-  "majorCapabilities": []
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
